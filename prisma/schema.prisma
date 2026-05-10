@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://one2th-conf:LYuDsi5sc1UZlqU@localhost:3306/one2th_conf"
+}
+
+model User {
+  id         Int        @id @default(autoincrement())
+  fullName   String
+  email      String     @unique
+  profession String
+  country    String
+  createdAt  DateTime   @default(now())
+  attended   Boolean    @default(false)
+  abstracts  Abstract[]
+}
+
+model Abstract {
+  id             Int       @id @default(autoincrement())
+  title          String
+  authorName     String
+  email          String
+  pdfUrl         String
+  category       String    @default("General")
+  status         String    @default("PENDING")
+  submitterId    Int?
+  submissionDate DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  submitter      User?     @relation(fields: [submitterId], references: [id])
+  reviews        Review[]
+}
+
+model Reviewer {
+  id             Int      @id @default(autoincrement())
+  name           String
+  specialty      String
+  maxAssignments Int      @default(5)
+  createdAt      DateTime @default(now())
+  reviews        Review[]
+}
+
+model Review {
+  id             Int      @id @default(autoincrement())
+  abstractId     Int
+  reviewerId     Int
+  scientificScore Int?
+  comments       String?
+  internalNotes  String?
+  decision       String?
+  createdAt      DateTime @default(now())
+  abstract       Abstract @relation(fields: [abstractId], references: [id])
+  reviewer       Reviewer @relation(fields: [reviewerId], references: [id])
+}
+
+model Question {
+  id        Int      @id @default(autoincrement())
+  text      String
+  author    String   @default("Anonymous")
+  createdAt DateTime @default(now())
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
