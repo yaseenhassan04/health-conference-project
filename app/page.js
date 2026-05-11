@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-
+export const dynamic = 'force-dynamic';
 export default function Home() {
   const [lang, setLang]           = useState('ar');
   const [modal, setModal]         = useState(null);

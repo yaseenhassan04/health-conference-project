@@ -2,7 +2,7 @@ import { writeFile, readFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import nodemailer from 'nodemailer';
-
+export const dynamic = 'force-dynamic';
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,

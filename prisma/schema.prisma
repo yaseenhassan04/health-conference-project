@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = "mysql://one2th-conf:LYuDsi5sc1UZlqU@localhost:3306/one2th_conf"
+  url      = "mysql://avnadmin:AVNS_Jbf2jLO9ff3iErsU12M@mysql-20d27a81-yaseenhassan04.i.aivencloud.com:17396/defaultdb?ssl-mode=REQUIRED"
 }
 
 model User {
