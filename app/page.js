@@ -85,7 +85,7 @@ export default function Home() {
     dir:'rtl', langTxt:'English',
     conferenceTitle:'المؤتمر الطبي الدولي الثاني عشر',
     conferenceSub:'للصمود والاستدامة في الطوارئ والاستجابة الإنسانية',
-    btnReg:'سجّل الآن', btnProg:'البرنامج العلمي', watchVideo:'شاهد الفيلم التعريفي',
+    btnReg:'قدم بحثك الآن', btnProg:'البرنامج العلمي', watchVideo:'شاهد الفيلم التعريفي',
     statsLbls:['متحدث دولي','جلسة علمية','مشترك متوقع','دولة مشاركة'],
     newsTitle:'أخبار المؤتمر',
     membersLbl:'رئيس اللجنة', expertiseLbl:'التخصصات', emailLbl:'البريد', phoneLbl:'الهاتف',
@@ -97,7 +97,7 @@ export default function Home() {
     presidentFooter:'رئيس المؤتمر الطبي الدولي · 2026',
     mediaCaptions:[{caption:'مجمع ميران الطبي',tag:'مستشفى'},{caption:'حفل الافتتاح',tag:'فعاليات'},{caption:'ورشة عمل طبية',tag:'ورش'},{caption:'المتحدثون الدوليون',tag:'متحدثون'},{caption:'جلسة التحكيم',tag:'جلسات'}],
     president:{ name:'د. أحمد جمعة الروبي', role:'رئيس المؤتمر', title:'مدير قسم الباطنة — استشاري الأمراض الباطنية', bio:'طبيب استشاري متخصص في الأمراض الباطنية، يشغل منصب مدير قسم الباطنة، وله خبرة واسعة في إدارة الحالات الطبية المعقدة والإشراف على البحث العلمي.', email:'rubai@medical.edu', phone:'+970-8-2816-1010', image:'/Mohamed_El_Rouby.jpg', expertise:['الأمراض الباطنية','إدارة الأقسام','البحث العلمي'] },
-    supervisor:{ name:'د. عمر الأسطل', role:'المشرف العام', title:'استشاري الأمراض الرئوية والعناية المركزة — أمريكا', bio:'استشاري دولي في الأمراض الرئوية والعناية المركزة، متمرس في المستشفيات الأمريكية، ويُشرف على الجانب العلمي والتنظيمي للمؤتمر.', email:'astal@medical.edu', phone:'+1-555-000-1234', image:'/Amr_Al_Astal.jpg', expertise:['الأمراض الرئوية','العناية المركزة','الطب الدولي'] },
+    supervisor:{ name:'د. عمرو الأسطل', role:'المشرف العام', title:'استشاري الأمراض الرئوية والعناية المركزة — أمريكا', bio:'استشاري دولي في الأمراض الرئوية والعناية المركزة، متمرس في المستشفيات الأمريكية، ويُشرف على الجانب العلمي والتنظيمي للمؤتمر.', email:'astal@medical.edu', phone:'+1-555-000-1234', image:'/Amr_Al_Astal.jpg', expertise:['الأمراض الرئوية','العناية المركزة','الطب الدولي'] },
     committees:[
       {name:'اللجنة التحضيرية',icon:'🏗️',desc:'تشرف على التخطيط العام للمؤتمر وتنسيق الجدول الزمني.',members:['د. محمد خطاب قنديل'],head:{ name:'د. محمد خطاب قنديل', title:'استشاري طب الطوارئ والحالات الحرجة', bio:'استشاري طب الطوارئ والحالات الحرجة، يعمل حاليا في غزة وسابقا في الدوحة. حاصل على البورد العربي والزمالة البريطانية في تخصصه. مدرس في كليات الطب بغزة وباحث أكاديمي متخصص بعدة أبحاث محكمة.', email:'khatab@medical.edu', phone:'+970-8-2816-2020', image:'/Mohamed_Khattab_Qandil.jpg', expertise:['طب الطوارئ','الحالات الحرجة','التعليم الطبي'] }},
       {name:'اللجنة العلمية',icon:'🔬',desc:'مسؤولة عن مراجعة الأبحاث وتحديد المحاور العلمية.',members:['د. محمود الشيخ علي'],head:{ name:'د. محمود الشيخ علي', title:'استشاري الطب الباطني والمناظير', bio:'استشاري الطب الباطني والمناظير مع خبرة عميقة في مجاله. حاصل على الزمالة البريطانية في الطب الباطني. رئيس اللجنة العلمية لمؤتمر الطب الباطني الثاني عشر المسؤول عن مراجعة وتقييم الأبحاث العلمية.', email:'drmnali@gmail.com', phone:'+972-56-703-3314', image:'/Mahmoud_Al_Sheikh_Ali.jpg', expertise:['الطب الباطني','المناظير','تقييم الأبحاث'] }},
@@ -408,7 +408,7 @@ export default function Home() {
                   style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'12px', background:`linear-gradient(135deg,${R},#a80d24)`, color:'#fff', borderRadius:11, fontFamily:"'Cairo',sans-serif", fontSize:14.5, fontWeight:800, textDecoration:'none', transition:'all .22s', boxShadow:`0 4px 14px ${R}40` }}>
                   🎫 {t.btnReg}
                 </Link>
-                <Link href="/program" className="pro-btn"
+                <Link href="/participation" className="pro-btn"
                   style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'11px', background:'#fff', color:B, borderRadius:11, fontFamily:"'Cairo',sans-serif", fontSize:14, fontWeight:700, textDecoration:'none', transition:'all .22s', border:`1.5px solid ${B}25` }}
                   onMouseEnter={e=>{e.currentTarget.style.background=`${B}08`;}}
                   onMouseLeave={e=>{e.currentTarget.style.background='#fff';}}>
