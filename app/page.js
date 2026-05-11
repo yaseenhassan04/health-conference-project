@@ -399,12 +399,8 @@ export default function Home() {
                 {isRtl ? '• المؤتمر الثاني عشر •' : '• 12th EDITION •'}
               </div>
 
-             
-
-             
-
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                <Link href="/registration" className="btn-pri pro-btn"
+                <Link href="/participation" className="btn-pri pro-btn"
                   style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'12px', background:`linear-gradient(135deg,${R},#a80d24)`, color:'#fff', borderRadius:11, fontFamily:"'Cairo',sans-serif", fontSize:14.5, fontWeight:800, textDecoration:'none', transition:'all .22s', boxShadow:`0 4px 14px ${R}40` }}>
                   🎫 {t.btnReg}
                 </Link>
