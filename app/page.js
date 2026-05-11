@@ -125,7 +125,7 @@ export default function Home() {
     presidentQuoteLabel:"President's Message",
     presidentQuote:"It is my honor to welcome you to the International Medical Conference on Resilience and Sustainability.\n\nThis scientific forum embodies our noble mission: advancing healthcare standards and exchanging medical knowledge even in the most challenging of times. We invite all physicians and researchers to participate actively.",
     presidentFooter:'Conference President · International Medical Conference 2026',
-    mediaCaptions:[{caption:'Miran Medical Complex',tag:'Hospital'},{caption:'Opening Ceremony',tag:'Events'},{caption:'Medical Workshop',tag:'Workshops'},{caption:"Int'l Speakers",tag:'Speakers'},{caption:'Review Session',tag:'Sessions'}],
+    mediaCaptions:[{caption:'Nasser Medical Complex',tag:'Hospital'},{caption:'Opening Ceremony',tag:'Events'},{caption:'Medical Workshop',tag:'Workshops'},{caption:"Int'l Speakers",tag:'Speakers'},{caption:'Review Session',tag:'Sessions'}],
     president:{ name:'Dr. Ahmed Jumaa Al-Rubai', role:'Conference President', title:'Head of Internal Medicine — Consultant Internist', bio:'Consultant specialist in internal medicine, serving as Head of the Internal Medicine Department, with extensive experience in complex case management and scientific research oversight.', email:'rubai@medical.edu', phone:'+970-8-2816-1010', image:'/Mohamed_El_Rouby.jpg', expertise:['Internal Medicine','Department Management','Scientific Research'] },
     supervisor:{ name:'Dr. Omar Al-Astal', role:'General Supervisor', title:'Pulmonology & Critical Care — USA', bio:'International consultant in pulmonology and critical care, experienced in American hospitals, overseeing the scientific and organizational aspects of the conference.', email:'astal@medical.edu', phone:'+1-555-000-1234', image:'/Amr_Al_Astal.jpg', expertise:['Pulmonology','Critical Care',"Int'l Medicine"] },
     committees:[
@@ -136,7 +136,7 @@ export default function Home() {
     news:[
       {title:'Abstract Submission Open',date:'May 1, 2026',icon:'📋',content:'Abstract submission is open from May 1st to June 30th, 2026.'},
       {title:"Int'l Speakers Confirmed",date:'Apr 20, 2026',icon:'🌍',content:'International speakers from Europe and USA have been confirmed.'},
-      {title:'Conference: Dec 4–5, 2026',date:'Apr 1, 2026',icon:'📅',content:'The conference will be held at Miran Medical Complex, Gaza.'},
+      {title:'Conference: Dec 4–5, 2026',date:'Apr 1, 2026',icon:'📅',content:'The conference will be held at Nasser Medical Complex, Gaza.'},
     ],
     footer:'© 2026 Medical Resilience & Sustainability Conference',
     execCommittee:'Executive Committee',
@@ -399,28 +399,9 @@ export default function Home() {
                 {isRtl ? '• المؤتمر الثاني عشر •' : '• 12th EDITION •'}
               </div>
 
-              <div style={{ borderRadius:14, overflow:'hidden', border:`2px solid ${G}40`, boxShadow:`0 4px 16px rgba(27,54,93,0.1)`, marginBottom:16, background:`${G}08`, minHeight:130, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <img src="/hero-banner.png" alt="Conference Logo"
-                  style={{ width:'100%', maxHeight:170, objectFit:'contain', display:'block' }}
-                  onError={e=>{
-                    e.currentTarget.style.display='none';
-                    const p=e.currentTarget.parentElement;
-                    p.innerHTML=`<div style="padding:24px;text-align:center"><div style="font-size:44px;margin-bottom:10px">🏥</div><div style="color:${B};font-size:15px;font-weight:900;line-height:1.6">${isRtl?'المؤتمر الطبي\nالدولي الثاني عشر':'12th International\nMedical Conference'}</div></div>`;
-                  }}/>
-              </div>
+             
 
-              <div style={{ fontSize:16, fontWeight:900, color:B, lineHeight:1.6, marginBottom:6 }}>
-                {isRtl ? 'المؤتمر الطبي الدولي الثاني عشر' : '12th International Medical Conference'}
-              </div>
-              <div style={{ fontSize:12, color:'#9A7A10', fontWeight:700, lineHeight:1.55, marginBottom:14 }}>
-                {isRtl ? 'للصمود والاستدامة' : 'Resilience & Sustainability'}
-              </div>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, fontSize:11.5, color:'#5A7099', direction:'ltr', marginBottom:18 }}>
-                <span style={{ color:R }}>📍</span>
-                <span>Miran Medical Complex · Gaza</span>
-                <span style={{ color:`${B}30` }}>|</span>
-                <span style={{ color:B, fontWeight:700 }}>Dec 4–5, 2026</span>
-              </div>
+             
 
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 <Link href="/registration" className="btn-pri pro-btn"
@@ -674,7 +655,7 @@ export default function Home() {
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, flexWrap:'wrap' }}>
           <span>{t.footer}</span>
           <span style={{ color:'#e2e8f0' }}>|</span>
-          <span style={{ direction:'ltr', color:'#cbd5e1' }}>Miran Medical Complex · Gaza · 4–5 Dec 2026</span>
+          <span style={{ direction:'ltr', color:'#cbd5e1' }}>Nasser Medical Complex · Gaza · 4–5 Dec 2026</span>
         </div>
       </footer>
 
