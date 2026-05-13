@@ -1,9 +1,10 @@
 "use client";
 import { useState, useRef } from 'react';
 import Link from 'next/link';
+import { useLang } from '@/context/LangContext';
 
 export default function Participation() {
-  const [lang, setLang] = useState('ar');
+  const { lang, setLang } = useLang();
   const [formData, setFormData] = useState({ title: '', authorName: '', email: '', file: null });
   const [status, setStatus] = useState('');
   const [statusType, setStatusType] = useState('');

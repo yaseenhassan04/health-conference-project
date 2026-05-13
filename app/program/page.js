@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useLang } from '@/context/LangContext';
 
 const B = '#1B365D', R = '#C8102E', G = '#D4AF37';
 
@@ -187,7 +188,7 @@ function SessionCard({ session, bp }) {
 
 /* ─── الصفحة الرئيسية ─── */
 export default function Program() {
-  const [lang, setLang] = useState('ar');
+  const { lang, setLang } = useLang();
   const [acceptedAbstracts, setAcceptedAbstracts] = useState([]);
   const [loadingLib, setLoadingLib] = useState(true);
   const bp = useBreakpoint();

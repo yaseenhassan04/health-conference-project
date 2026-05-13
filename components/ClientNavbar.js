@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Globe, Menu, X } from 'lucide-react';
-
+import { useLang } from '@/context/LangContext';
 const emergencyBlue = "#1B365D";
 const goldenTouch   = "#D4AF37";
 
@@ -52,7 +52,7 @@ function useBreakpoint() {
 }
 
 export default function ClientNavbar() {
-  const [lang, setLang]       = useState('ar');
+  const { lang, setLang } = useLang();
   const [menuOpen, setMenuOpen] = useState(false);
   const bp       = useBreakpoint();
   const isMobile = bp === 'mobile';
