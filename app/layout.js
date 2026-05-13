@@ -1,6 +1,6 @@
 import { Tajawal } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import ClientNavbar from "@/components/ClientNavbar";
 
 const tajawal = Tajawal({ 
   subsets: ["arabic"],
@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ar">
       <body className={tajawal.className}>
-        <Navbar />
+        <ClientNavbar />
         <main style={{ padding: 0, margin: 0, width: '100%' }}>
           {children}
         </main>

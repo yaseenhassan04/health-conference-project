@@ -2,9 +2,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 datasource db {
   provider = "mysql"
-  url      = "mysql://avnadmin:AVNS_Jbf2jLO9ff3iErsU12M@mysql-20d27a81-yaseenhassan04.i.aivencloud.com:17396/defaultdb?ssl-mode=REQUIRED"
+  url      = env("DATABASE_URL")
 }
 
 model User {
