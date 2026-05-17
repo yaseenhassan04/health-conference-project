@@ -6,6 +6,7 @@
  * PATCH  → تعديل تفاصيل خبر موجود (مؤمن)
  * DELETE → حذف خبر نهائياً (مؤمن)
  */
+import { NextResponse } from "next/server";
 
 import prisma from "@/lib/prisma";
 
@@ -123,6 +124,7 @@ export async function DELETE(req) {
     await prisma.news.delete({
       where: { id: targetId }
     });
+
 
     return NextResponse.json({ success: true, message: "تم حذف الخبر بنجاح من شريط المستجدات" });
   } catch (error) {
