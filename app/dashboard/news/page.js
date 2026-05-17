@@ -40,9 +40,10 @@ export default function NewsDashboard() {
   const [editItem, setEditItem] = useState(null);
   const [toast, setToast] = useState(null);
 
+  // الكائن الافتراضي يبدأ بحقل تاريخ فارغ لتجنب خطأ الـ Hydration المزعج
   const EMPTY = {
     title: "",
-    date: new Date().toLocaleDateString("ar-EG"),
+    date: "",
     icon: "📰",
     content: "",
     published: true,
@@ -55,7 +56,6 @@ export default function NewsDashboard() {
   const fetchNews = async () => {
     setLoading(true);
     try {
-      // 🔥 تعديل 1: إضافة الـ Token عند جلب الأخبار (GET)
       const res = await fetch("/api/news", {
         headers: {
           "x-admin-token": "samoud2025",
@@ -85,23 +85,28 @@ export default function NewsDashboard() {
       return;
     }
 
-    const isEdit = !!editItem.id;
+    // إذا ترك المستخدم حقل التاريخ فارغاً، نقوم بصياغته فوراً داخل المتصفح لحظة الإرسال فقط
+    const finalItem = {
+      ...editItem,
+      date: editItem.date.trim() ? editItem.date : new Date().toLocaleDateString("ar-EG")
+    };
+
+    const isEdit = !!finalItem.id;
     try {
-      // 🔥 تعديل 2: إضافة الـ Token عند حفظ أو تعديل الخبر (POST / PATCH)
       const res = await fetch("/api/news", {
         method: isEdit ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
           "x-admin-token": "samoud2025",
         },
-        body: JSON.stringify(editItem),
+        body: JSON.stringify(finalItem),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setNews((prev) =>
         isEdit
-          ? prev.map((i) => (i.id === editItem.id ? data.item : i))
+          ? prev.map((i) => (i.id === finalItem.id ? data.item : i))
           : [data.item, ...prev]
       );
       setShowForm(false);
@@ -115,7 +120,6 @@ export default function NewsDashboard() {
   const handleDelete = async (id) => {
     if (!confirm("هل أنت متأكد من حذف هذا الخبر؟")) return;
     try {
-      // 🔥 تعديل 3: إضافة الـ Token عند حذف الخبر (DELETE)
       const res = await fetch(`/api/news?id=${id}`, {
         method: "DELETE",
         headers: {
@@ -132,7 +136,6 @@ export default function NewsDashboard() {
 
   const handleToggle = async (item) => {
     try {
-      // 🔥 تعديل 4: إضافة الـ Token عند تبديل حالة النشر/الإخفاء السريع (PATCH)
       const res = await fetch("/api/news", {
         method: "PATCH",
         headers: {
@@ -258,7 +261,7 @@ export default function NewsDashboard() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 14 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: B, display: "block", marginBottom: 5 }}>
-                  التاريخ
+                  التاريخ (اتركه فارغاً ليعتمد تاريخ اليوم تلقائياً)
                 </label>
                 <input
                   style={inputStyle}
@@ -266,7 +269,7 @@ export default function NewsDashboard() {
                   onChange={(e) =>
                     setEditItem((prev) => ({ ...prev, date: e.target.value }))
                   }
-                  placeholder="١ مايو ٢٠٢٦"
+                  placeholder="مثال: ١ مايو ٢٠٢٦"
                 />
               </div>
               <div>
@@ -434,7 +437,7 @@ export default function NewsDashboard() {
                 </div>
               </div>
 
-              {/* أزرار */}
+              {/* أزرار الإجراءات */}
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                 <button
                   onClick={() => handleToggle(item)}
