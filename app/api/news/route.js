@@ -7,8 +7,8 @@
  * DELETE → حذف خبر نهائياً (مؤمن)
  */
 
-import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
+
 
 const prisma = new PrismaClient();
 
@@ -128,7 +128,5 @@ export async function DELETE(req) {
   } catch (error) {
     console.error("❌ [news_delete_error]", error);
     return NextResponse.json({ error: "الخبر غير موجود بالفعل أو حدث خطأ داخلي" }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
-  }
+  } 
 }
