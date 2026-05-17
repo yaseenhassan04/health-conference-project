@@ -55,7 +55,12 @@ export default function NewsDashboard() {
   const fetchNews = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/news");
+      // 🔥 تعديل 1: إضافة الـ Token عند جلب الأخبار (GET)
+      const res = await fetch("/api/news", {
+        headers: {
+          "x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025",
+        },
+      });
       const data = await res.json();
       setNews(data.items || []);
     } catch {
@@ -82,9 +87,13 @@ export default function NewsDashboard() {
 
     const isEdit = !!editItem.id;
     try {
+      // 🔥 تعديل 2: إضافة الـ Token عند حفظ أو تعديل الخبر (POST / PATCH)
       const res = await fetch("/api/news", {
         method: isEdit ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025",
+        },
         body: JSON.stringify(editItem),
       });
       const data = await res.json();
@@ -106,7 +115,13 @@ export default function NewsDashboard() {
   const handleDelete = async (id) => {
     if (!confirm("هل أنت متأكد من حذف هذا الخبر؟")) return;
     try {
-      const res = await fetch(`/api/news?id=${id}`, { method: "DELETE" });
+      // 🔥 تعديل 3: إضافة الـ Token عند حذف الخبر (DELETE)
+      const res = await fetch(`/api/news?id=${id}`, {
+        method: "DELETE",
+        headers: {
+          "x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025",
+        },
+      });
       if (!res.ok) throw new Error();
       setNews((prev) => prev.filter((i) => i.id !== id));
       showToast("تم الحذف");
@@ -117,9 +132,13 @@ export default function NewsDashboard() {
 
   const handleToggle = async (item) => {
     try {
+      // 🔥 تعديل 4: إضافة الـ Token عند تبديل حالة النشر/الإخفاء السريع (PATCH)
       const res = await fetch("/api/news", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025",
+        },
         body: JSON.stringify({ id: item.id, published: !item.published }),
       });
       const data = await res.json();

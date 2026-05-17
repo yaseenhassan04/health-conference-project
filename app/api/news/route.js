@@ -1,7 +1,7 @@
 /**
  * app/api/news/route.js
  * API للأخبار - إدارة الأخبار في الصفحة الرئيسية (مؤمن ومربوط بـ Prisma سحابياً)
- * GET    → جلب كل الأخبار للزوار (مرتبة تلقائياً من الأحدث للأقدم)
+ * GET    → جلب كل الأخبار للزوار (مفتوح للجميع - مرتب تلقائياً من الأحدث للأقدم)
  * POST   → إضافة خبر جديد للمؤتمر (مؤمن)
  * PATCH  → تعديل تفاصيل خبر موجود (مؤمن)
  * DELETE → حذف خبر نهائياً (مؤمن)
@@ -17,13 +17,16 @@ export const dynamic = 'force-dynamic';
 
 // دالة التحقق من التوكن السري للإدارة لحماية العمليات الحساسة
 function checkAuth(req) {
-  return req.headers.get('x-admin-token') === process.env.ADMIN_TOKEN;
+  const incomingToken = req.headers.get('x-admin-token');
+  // جلب التوكن من السيرفر، وإذا لم يكن موجوداً نستخدم القيمة الافتراضية samoud2025 لعدم قفل السيرفر
+  const serverToken = process.env.ADMIN_TOKEN || "samoud2025";
+  
+  return incomingToken === serverToken;
 }
 
-// ─── GET: جلب كل الأخبار (مرتبة تلقائياً حسب تاريخ الإنشاء) ───
+// ─── GET: جلب كل الأخبار (مفتوح للعامة ولا يتطلب توكن) ───
 export async function GET() {
   try {
-    // جلب الأخبار المنشورة فقط، أو جلبها بالكامل وفرزها من الأحدث للأقدم
     const items = await prisma.news.findMany({
       orderBy: { createdAt: 'desc' }
     });
@@ -51,7 +54,6 @@ export async function POST(req) {
       );
     }
 
-    // صياغة التاريخ بصيغة مقروءة محلياً في حال عدم إرساله من الواجهة
     const finalDate = date || new Date().toLocaleDateString("ar-EG");
 
     const newItem = await prisma.news.create({
@@ -85,10 +87,8 @@ export async function PATCH(req) {
       return NextResponse.json({ error: "معرف الخبر (id) مطلوب" }, { status: 400 });
     }
 
-    // تحويل المعرّف ذكياً بناءً على نوع الحقل في قاعدة بياناتك (Int أو String)
     const targetId = isNaN(id) ? id : parseInt(id);
 
-    // استبعاد حقول الحماية لمنع تعديلها بالخطأ
     delete updates.id;
     delete updates.createdAt;
     if (updates.published !== undefined) updates.published = Boolean(updates.published);

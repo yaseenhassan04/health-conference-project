@@ -1,6 +1,6 @@
 "use client";
 /**
- * صفحة داشبورد الدكتور — إدارة المكتبة الرقمية (نسخة مطابقة للسيرفر السحابي)
+ * صفحة داشبورد الدكتور — إدارة المكتبة الرقمية (نسخة مطابقة للسيرفر السحابي مع التوكن المحدث)
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -120,8 +120,12 @@ function ItemModal({ onClose, onSaved }) {
       fd.append('author', form.author || 'اللجنة العلمية');
       fd.append('file', uploadFile);
 
+      // 🔥 تعديل 1: إضافة التوكن في حقول الرأس لطلب الـ POST لرفع الملف وحفظه
       const res = await fetch('/api/library', {
         method: 'POST',
+        headers: {
+          'x-admin-token': process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'samoud2025'
+        },
         body: fd,
       });
       
@@ -256,7 +260,12 @@ export default function LibraryDashboard() {
 
   const fetchItems = useCallback(() => {
     setLoading(true);
-    fetch('/api/library')
+    // 🔥 تعديل 2: إضافة التوكن في حقول الرأس لطلب الـ GET لجلب البيانات بشكل سليم
+    fetch('/api/library', {
+      headers: {
+        'x-admin-token': process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'samoud2025'
+      }
+    })
       .then(r => r.json())
       .then(d => setItems(d.books || []))
       .catch(() => showToast('فشل تحميل بيانات المكتبة', false))
@@ -273,9 +282,13 @@ export default function LibraryDashboard() {
 
   const handleDelete = async (id) => {
     try {
+      // 🔥 تعديل 3: إضافة التوكن في حقول الرأس لطلب الـ DELETE لحذف المستند السحابي وقاعدة البيانات
       const res = await fetch('/api/library', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-token': process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'samoud2025'
+        },
         body: JSON.stringify({ id })
       });
       if (!res.ok) throw new Error();
