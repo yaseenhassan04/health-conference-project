@@ -58,7 +58,7 @@ export default function NewsDashboard() {
       // 🔥 تعديل 1: إضافة الـ Token عند جلب الأخبار (GET)
       const res = await fetch("/api/news", {
         headers: {
-          "x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025",
+          "x-admin-token": "samoud2025",
         },
       });
       const data = await res.json();
@@ -92,7 +92,7 @@ export default function NewsDashboard() {
         method: isEdit ? "PATCH" : "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025",
+          "x-admin-token": "samoud2025",
         },
         body: JSON.stringify(editItem),
       });
@@ -119,7 +119,7 @@ export default function NewsDashboard() {
       const res = await fetch(`/api/news?id=${id}`, {
         method: "DELETE",
         headers: {
-          "x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025",
+          "x-admin-token": "samoud2025",
         },
       });
       if (!res.ok) throw new Error();
@@ -137,7 +137,7 @@ export default function NewsDashboard() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-token": process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025",
+          "x-admin-token": "samoud2025",
         },
         body: JSON.stringify({ id: item.id, published: !item.published }),
       });
