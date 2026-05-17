@@ -1,5 +1,5 @@
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { put } from '@vercel/blob';
+import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { PrismaClient } from '@prisma/client';
 
@@ -29,37 +29,41 @@ export async function POST(request) {
     const file       = formData.get('file');
 
     if (!title || !authorName || !email || !file)
-      return Response.json({ success: false, error: 'جميع الحقول مطلوبة' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'جميع الحقول مطلوبة' }, { status: 400 });
 
     if (file.type !== 'application/pdf')
-      return Response.json({ success: false, error: 'يجب أن يكون الملف PDF فقط' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'يجب أن يكون الملف PDF فقط' }, { status: 400 });
 
     if (file.size > 20 * 1024 * 1024)
-      return Response.json({ success: false, error: 'حجم الملف يتجاوز 20 MB' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'حجم الملف يتجاوز 20 MB' }, { status: 400 });
 
-    // 1️⃣ حفظ الملف مؤقتاً في مجلد /tmp المسموح به في Vercel
-    const uploadDir = '/tmp'; 
+    // 1️⃣ تحويل الملف إلى Buffer في الذاكرة لقراءته للإيميل وللرفع السحابي
+    const bytes = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(bytes);
+
     const timestamp     = Date.now();
     const sanitizedName = authorName.replace(/\s+/g, '-').toLowerCase();
     const filename      = `${timestamp}-${sanitizedName}.pdf`;
-    const bytes         = await file.arrayBuffer();
-    const fullFilePath  = join(uploadDir, filename);
-    
-    await writeFile(fullFilePath, Buffer.from(bytes));
 
-    // 2️⃣ الحفظ المطابق 100% للـ Schema (إدخال الحقول الصحيحة فقط لجدول Abstract)
+    // 2️⃣ الرفع السحابي المستقر إلى Vercel Blob (الملف لن يختفي أبداً)
+    const blob = await put(`abstracts/${filename}`, fileBuffer, {
+      access: 'public',
+    });
+
+    // 3️⃣ الحفظ في قاعدة البيانات برابط سحابي دائم (blob.url)
+    // تنبيه: إذا كان الـ ID في الاسكيما لديك String، تأكد من عدم استخدام parseInt لاحقاً
     const researchData = await prisma.abstract.create({
       data: {
-        title: title,
-        authorName: authorName,
-        email: email,
-        category: category,
-        pdfUrl: `/api/download/${filename}`, // استخدام pdfUrl بدلاً من الحقول القديمة
-        status: 'PENDING' // بحروف كبيرة متطابقاً مع الـ Default في الـ Schema
+        title: title.trim(),
+        authorName: authorName.trim(),
+        email: email.trim().toLowerCase(),
+        category: category.trim(),
+        pdfUrl: blob.url, // الرابط السحابي الدائم الذي يبدأ بـ https://...
+        status: 'PENDING'
       }
     });
 
-    // 3️⃣ إرسال إيميل للباحث
+    // 4️⃣ إرسال إيميل تأكيدي للباحث
     try {
       await transporter.sendMail({
         from: `"مؤتمر الصمود والاستدامة" <${process.env.EMAIL_USER}>`,
@@ -93,7 +97,7 @@ export async function POST(request) {
       console.error('❌ Email to researcher failed:', mailErr.message);
     }
 
-    // 4️⃣ إشعار للجنة مع إرفاق الملف المرفوع مباشرة لحل مشكلة نظام القراءة فقط
+    // 5️⃣ إشعار للجنة مع إرفاق الملف مباشرة من الـ Buffer بالذاكرة (بدون قراءة من الهارددسك)
     try {
       await transporter.sendMail({
         from: `"نظام المؤتمر" <${process.env.EMAIL_USER}>`,
@@ -101,8 +105,8 @@ export async function POST(request) {
         subject: `📋 بحث جديد #${researchData.id}: ${title}`,
         attachments: [
           {
-            filename: filename,
-            path: fullFilePath
+            filename: file.name || filename,
+            content: fileBuffer // نمرر الـ Buffer المخزن بالذاكرة مباشرة وهو آمن 100% على Vercel
           }
         ],
         html: `
@@ -113,6 +117,7 @@ export async function POST(request) {
               <tr><td style="padding:10px;color:#64748b">الإيميل</td><td style="padding:10px">${email}</td></tr>
               <tr style="background:#f8fafc"><td style="padding:10px;color:#64748b">العنوان</td><td style="padding:10px;font-weight:bold">${title}</td></tr>
               <tr><td style="padding:10px;color:#64748b">المجال</td><td style="padding:10px">${category}</td></tr>
+              <tr style="background:#f8fafc"><td style="padding:10px;color:#64748b">رابط التحميل السحابي</td><td style="padding:10px"><a href="${blob.url}" target="_blank">اضغط هنا لفتح الملف</a></td></tr>
             </table>
           </div>
         `,
@@ -121,16 +126,16 @@ export async function POST(request) {
       console.error('❌ Email to admin failed:', mailErr.message);
     }
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
-      message: 'تم استلام بحثك بنجاح',
+      message: 'تم استلام بحثك بنجاح للرفع السحابي',
       researchId: researchData.id,
       data: researchData
     }, { status: 200 });
 
   } catch (error) {
     console.error('❌ Error:', error);
-    return Response.json({ success: false, error: 'حدث خطأ في الخادم', details: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'حدث خطأ في الخادم', details: error.message }, { status: 500 });
   }
 }
 
@@ -139,9 +144,9 @@ export async function GET() {
     const abstracts = await prisma.abstract.findMany({
       orderBy: { createdAt: 'desc' }
     });
-    return Response.json({ success: true, total: abstracts.length, abstracts }, { status: 200 });
+    return NextResponse.json({ success: true, total: abstracts.length, abstracts }, { status: 200 });
   } catch (error) {
-    return Response.json({ success: false, error: 'حدث خطأ في جلب البيانات', abstracts: [] }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'حدث خطأ في جلب البيانات', abstracts: [] }, { status: 500 });
   }
 }
 
@@ -149,18 +154,20 @@ export async function PUT(request) {
   try {
     const { id, status } = await request.json();
     if (!id || !status)
-      return Response.json({ success: false, error: 'البيانات غير كاملة' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'البيانات غير كاملة' }, { status: 400 });
 
-    // تحديث الحالة بحروف كبيرة لتطابق الـ Schema (ACCEPTED / REJECTED)
     const updatedStatus = status.toUpperCase();
 
+    // فحص ذكي لنوع المعرف منعا لـ ValidationError: إذا كان يقبل أرقام نقوم بتحويله وإلا نتركه String كما هو
+    const targetId = isNaN(id) ? id : parseInt(id);
+
     const abstract = await prisma.abstract.update({
-      where: { id: parseInt(id) },
+      where: { id: targetId },
       data: { status: updatedStatus }
     });
 
-    const isAccepted = updatedStatus === 'ACCEPTED' || updatedStatus === 'ACCEPTED';
     try {
+      const isAccepted = updatedStatus === 'ACCEPTED';
       await transporter.sendMail({
         from: `"مؤتمر الصمود والاستدامة" <${process.env.EMAIL_USER}>`,
         to: abstract.email,
@@ -197,8 +204,8 @@ export async function PUT(request) {
       console.error('❌ Status email failed:', mailErr.message);
     }
 
-    return Response.json({ success: true, message: 'تم تحديث الحالة', data: abstract }, { status: 200 });
+    return NextResponse.json({ success: true, message: 'تم تحديث الحالة', data: abstract }, { status: 200 });
   } catch (error) {
-    return Response.json({ success: false, error: 'حدث خطأ في التحديث' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'حدث خطأ في التحديث', details: error.message }, { status: 500 });
   }
 }

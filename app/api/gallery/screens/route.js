@@ -1,125 +1,154 @@
 /**
  * app/api/gallery/screens/route.js
- * شاشات التفاعل - تدعم الآن: صور، فيديوهات، روابط، نصوص
+ * شاشات التفاعل - مؤمن ومربوط بـ Prisma بالكامل للإنتاج
+ * GET    → جلب كل الشاشات مرتبة حسب أولوية العرض (order)
+ * POST   → إضافة شاشة تفاعلية جديدة (مؤمن)
+ * PATCH  → تعديل بيانات الشاشة وتحديثها (مؤمن)
+ * DELETE → حذف الشاشة نهائياً من النظام (مؤمن)
  */
 
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { randomUUID } from "crypto";
+import { PrismaClient } from "@prisma/client";
 
-const DATA_FILE = path.join(process.cwd(), "data", "gallery-screens.json");
+const prisma = new PrismaClient();
 
-function ensureFile() {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "[]");
+// منع الـ Caching لضمان مرونة التحديث الفوري لترتيب وعرض الشاشات
+export const dynamic = 'force-dynamic';
+
+// دالة التحقق من التوكن السري للإدارة لحماية المسارات
+function checkAuth(req) {
+  return req.headers.get('x-admin-token') === process.env.ADMIN_TOKEN;
 }
 
-function readItems() {
-  ensureFile();
-  try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-  } catch {
-    return [];
-  }
-}
-
-function writeItems(items) {
-  ensureFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2));
-}
-
+// ─── GET: جلب شاشات التفاعل ───
 export async function GET() {
-  const items = readItems();
-  return NextResponse.json({ items });
+  try {
+    // جلب الشاشات وفرزها تصاعدياً بناءً على حقل الترتيب المُحدد (order)
+    const items = await prisma.galleryScreen.findMany({
+      orderBy: { order: 'asc' }
+    });
+    return NextResponse.json({ items });
+  } catch (error) {
+    console.error("Failed to fetch gallery screens:", error);
+    return NextResponse.json({ error: "حدث خطأ أثناء جلب شاشات التفاعل" }, { status: 500 });
+  }
 }
 
+// ─── POST: إضافة شاشة تفاعلية جديدة (مؤمن) ───
 export async function POST(req) {
-  const body = await req.json();
-  
-  // الحقول الجديدة مع دعم الوسائط
-  const {
-    type = "link",        // "image", "video", "link", "text"
-    titleAr,
-    titleEn = "",
-    descAr = "",
-    descEn = "",
-    icon = "🖥️",
-    href = "/media",
-    mediaUrl = "",        // رابط الصورة أو الفيديو
-    embedCode = "",       // كود تضمين (مثل YouTube embed)
-    published = true,
-    order = 0             // ترتيب العرض
-  } = body;
-
-  if (!titleAr) {
-    return NextResponse.json({ error: "titleAr مطلوب" }, { status: 400 });
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const items = readItems();
-  
-  const item = {
-    id: randomUUID(),
-    type,              // ← مهم لتحديد نوع المحتوى
-    titleAr,
-    titleEn,
-    descAr,
-    descEn,
-    icon,
-    href,
-    mediaUrl,          // ← جديد
-    embedCode,         // ← جديد
-    published,
-    order: order || items.length,
-    createdAt: new Date().toISOString()
-  };
-  
-  items.push(item);
-  writeItems(items);
-  return NextResponse.json({ item }, { status: 201 });
+  try {
+    const body = await req.json();
+    const {
+      type = "link",
+      titleAr,
+      titleEn = "",
+      descAr = "",
+      descEn = "",
+      icon = "🖥️",
+      href = "/media",
+      mediaUrl = "",
+      embedCode = "",
+      published = true,
+      order
+    } = body;
+
+    if (!titleAr?.trim()) {
+      return NextResponse.json({ error: "العنوان العربي (titleAr) مطلوب" }, { status: 400 });
+    }
+
+    // حساب الترتيب التلقائي في حال لم يقم الأدمن بتحديده
+    let finalOrder = order;
+    if (finalOrder === undefined || finalOrder === null) {
+      const count = await prisma.galleryScreen.count();
+      finalOrder = count;
+    }
+
+    const newItem = await prisma.galleryScreen.create({
+      data: {
+        type: type.trim(),
+        titleAr: titleAr.trim(),
+        titleEn: titleEn.trim(),
+        descAr: descAr.trim(),
+        descEn: descEn.trim(),
+        icon: icon.trim(),
+        href: href.trim(),
+        mediaUrl: mediaUrl.trim(),
+        embedCode: embedCode.trim(),
+        published: Boolean(published),
+        order: parseInt(finalOrder)
+      }
+    });
+
+    return NextResponse.json({ item: newItem }, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create gallery screen:", error);
+    return NextResponse.json({ error: "حدث خطأ في الخادم أثناء إضافة الشاشة التفاعلية" }, { status: 500 });
+  }
 }
 
+// ─── PATCH: تعديل بيانات شاشة (مؤمن) ───
 export async function PATCH(req) {
-  const body = await req.json();
-  const { id, ...updates } = body;
-  
-  if (!id) {
-    return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const items = readItems();
-  const idx = items.findIndex(i => i.id === id);
-  
-  if (idx === -1) {
-    return NextResponse.json({ error: "غير موجود" }, { status: 404 });
-  }
+  try {
+    const body = await req.json();
+    const { id, ...updates } = body;
+    
+    if (!id) {
+      return NextResponse.json({ error: "معرف الشاشة (id) مطلوب" }, { status: 400 });
+    }
 
-  // تحديث الحقول مع الاحتفاظ بالحقول القديمة غير المرسلة
-  items[idx] = {
-    ...items[idx],
-    ...updates,
-    updatedAt: new Date().toISOString()
-  };
-  
-  writeItems(items);
-  return NextResponse.json({ item: items[idx] });
+    const targetId = isNaN(id) ? id : parseInt(id);
+
+    // تنظيف البيانات المستبعدة من التعديل المباشر
+    delete updates.id;
+    delete updates.createdAt;
+    
+    if (updates.order !== undefined) updates.order = parseInt(updates.order);
+    if (updates.published !== undefined) updates.published = Boolean(updates.published);
+
+    const updatedItem = await prisma.galleryScreen.update({
+      where: { id: targetId },
+      data: updates
+    });
+
+    return NextResponse.json({ item: updatedItem });
+  } catch (error) {
+    console.error("Failed to update gallery screen:", error);
+    return NextResponse.json({ error: "الشاشة غير موجودة أو حدث خطأ في التحديث" }, { status: 500 });
+  }
 }
 
+// ─── DELETE: حذف شاشة تفاعلية (مؤمن) ───
 export async function DELETE(req) {
-  const id = new URL(req.url).searchParams.get("id");
-  
-  if (!id) {
-    return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const items = readItems();
-  const filtered = items.filter(i => i.id !== id);
-  
-  if (filtered.length === items.length) {
-    return NextResponse.json({ error: "غير موجود" }, { status: 404 });
-  }
+  try {
+    const id = new URL(req.url).searchParams.get("id");
+    
+    if (!id) {
+      return NextResponse.json({ error: "معرف الشاشة (id) مطلوب" }, { status: 400 });
+    }
 
-  writeItems(filtered);
-  return NextResponse.json({ success: true });
+    const targetId = isNaN(id) ? id : parseInt(id);
+
+    await prisma.galleryScreen.delete({
+      where: { id: targetId }
+    });
+
+    return NextResponse.json({ success: true, message: "تم حذف شاشة التفاعل بنجاح" });
+  } catch (error) {
+    console.error("Failed to delete gallery screen:", error);
+    return NextResponse.json({ error: "العنصر غير موجود أو حدث خطأ داخلي أثناء الحذف" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
 }

@@ -1,49 +1,63 @@
 /**
  * app/api/gallery/upload/route.js
- * POST → رفع صورة وحفظها في /public/uploads/gallery/
- * Returns: { url: "/uploads/gallery/xxx.jpg" }
+ * POST → رفع صورة وحفظها سحابياً في Vercel Blob
+ * Returns: { url: "https://xxx.public.blob.vercel-storage.com/gallery/xxx.jpg" }
  */
 
 import { NextResponse } from "next/server";
-import fs   from "fs";
-import path from "path";
+import { put } from "@vercel/blob";
 import { randomUUID } from "crypto";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "gallery");
+// إجبار الـ Route على العمل بشكل ديناميكي
+export const dynamic = 'force-dynamic';
+
+// دالة التحقق من التوكن لحماية الرفع من أي استغلال خارجي لوحدة التخزين
+function checkAuth(req) {
+  return req.headers.get('x-admin-token') === process.env.ADMIN_TOKEN;
+}
 
 export async function POST(req) {
-  try {
-    /* تأكد من وجود المجلد */
-    if (!fs.existsSync(UPLOAD_DIR))
-      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  // 1️⃣ حماية المسار
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
+  try {
     const formData = await req.formData();
     const file     = formData.get("file");
 
-    if (!file) return NextResponse.json({ error: "لا يوجد ملف" }, { status: 400 });
+    if (!file) return NextResponse.json({ error: "لا يوجد ملف مرفوع" }, { status: 400 });
 
-    /* التحقق من النوع */
+    // 2️⃣ التحقق من نوع الصيغة (Mime Type)
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowed.includes(file.type))
-      return NextResponse.json({ error: "نوع الملف غير مدعوم" }, { status: 400 });
+    if (!allowed.includes(file.type)) {
+      return NextResponse.json({ error: "نوع الملف غير مدعوم، يرجى رفع صور فقط" }, { status: 400 });
+    }
 
-    /* التحقق من الحجم (5 MB) */
-    if (file.size > 5 * 1024 * 1024)
-      return NextResponse.json({ error: "الحجم يتجاوز 5MB" }, { status: 400 });
+    // 3️⃣ التحقق من الحجم (5 MB) لمنع استهلاك مساحة التخزين السحابية
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "حجم الصورة يتجاوز الحد المسموح به (5MB)" }, { status: 400 });
+    }
 
-    /* تحديد الامتداد */
+    // 4️⃣ استخراج امتداد الملف وتوليد اسم فريد وآمن
     const ext      = file.type.split("/")[1].replace("jpeg", "jpg");
-    const filename = `${randomUUID()}.${ext}`;
-    const filePath = path.join(UPLOAD_DIR, filename);
+    const filename = `gallery/${randomUUID()}.${ext}`;
 
-    /* الحفظ */
+    // 5️⃣ تحويل الملف إلى Buffer والرفع مباشرة إلى Vercel Blob
     const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(filePath, buffer);
+    
+    const blob = await put(filename, buffer, {
+      access: "public", // لكي يكون الرابط متاحاً للزوار في المعرض
+    });
 
-    return NextResponse.json({ url: `/uploads/gallery/${filename}` });
+    // 6️⃣ إرجاع الرابط السحابي الدائم المستقر
+    return NextResponse.json({ 
+      success: true,
+      url: blob.url // الرابط الجديد سيبدأ بـ https://...vercel-storage.com
+    });
 
   } catch (err) {
-    console.error("[gallery/upload]", err);
-    return NextResponse.json({ error: "خطأ في الرفع" }, { status: 500 });
+    console.error("❌ [gallery/upload سحابي]", err);
+    return NextResponse.json({ error: "حدث خطأ أثناء معالجة الرفع السحابي" }, { status: 500 });
   }
 }

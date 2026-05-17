@@ -1,18 +1,19 @@
-// app/api/library/upload/route.js  (Next.js App Router)
-// ──────────────────────────────────────────────────────────────────────────────
-// يستقبل ملفاً واحداً عبر FormData، يحفظه في public/uploads/library/
-// ويرجع المسار النسبي { url: '/uploads/library/...' }
-//
-// الحد الأقصى للحجم: 20 MB  (عدّله في next.config.js إذا احتجت أكثر)
-// ──────────────────────────────────────────────────────────────────────────────
+/**
+ * app/api/library/upload/route.js (Next.js App Router)
+ * ──────────────────────────────────────────────────────────────────────────────
+ * يستقبل ملفاً واحداً عبر FormData، يرفعه سحابياً إلى Vercel Blob
+ * ويرجع المسار السحابي الآمن والمستقر { url: 'https://xxx.public.blob.vercel-storage.com/...' }
+ * ──────────────────────────────────────────────────────────────────────────────
+ */
 
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import fs   from 'fs';
+import { put } from '@vercel/blob';
 import path from 'path';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'library');
-const MAX_SIZE   = 20 * 1024 * 1024; // 20 MB
+// إجبار الـ Route على العمل بشكل ديناميكي ومنع التخزين المؤقت للطلبات
+export const dynamic = 'force-dynamic';
+
+const MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 
 const ALLOWED_TYPES = new Set([
   'application/pdf',
@@ -26,61 +27,75 @@ const ALLOWED_TYPES = new Set([
   'application/x-zip-compressed',
 ]);
 
-/* أسماء ملفات آمنة وفريدة */
+/* تنظيف اسم الملف وجعله متوافقاً مع الروابط السحابية دون مشاكل ترميز */
 function safeFilename(original) {
-  const ext      = path.extname(original).toLowerCase();
-  const base     = path.basename(original, ext).replace(/[^a-zA-Z0-9\u0600-\u06FF._-]/g, '_');
-  const stamp    = Date.now();
-  const rand     = Math.random().toString(36).slice(2, 7);
-  return `${stamp}-${rand}-${base}${ext}`;
+  const ext  = path.extname(original).toLowerCase();
+  const base = path.basename(original, ext).replace(/[^a-zA-Z0-9\u0600-\u06FF._-]/g, '_');
+  const stamp = Date.now();
+  const rand  = Math.random().toString(36).slice(2, 7);
+  return `library/${stamp}-${rand}-${base}${ext}`;
 }
 
-/* ─── POST: رفع الملف ─── */
+/* ─── POST: رفع الملف سحابياً ─── */
 export async function POST(req) {
-  /* التحقق من صلاحية المسؤول */
-  if (req.headers.get('x-admin-token') !== process.env.ADMIN_TOKEN)
+  /* 1️⃣ التحقق من صلاحية المسؤول */
+  if (req.headers.get('x-admin-token') !== process.env.ADMIN_TOKEN) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  /* استقبال FormData */
-  let formData;
-  try {
-    formData = await req.formData();
-  } catch {
-    return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
   }
 
-  const file = formData.get('file');
-  if (!file || typeof file === 'string')
-    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+  try {
+    /* 2️⃣ استقبال البيانات */
+    let formData;
+    try {
+      formData = await req.formData();
+    } catch {
+      return NextResponse.json({ error: 'Invalid form data' }, { status: 400 });
+    }
 
-  /* التحقق من نوع الملف */
-  if (!ALLOWED_TYPES.has(file.type))
+    const file = formData.get('file');
+    if (!file || typeof file === 'string') {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    /* 3️⃣ التحقق من نوع الملف (الميم-تايب) */
+    if (!ALLOWED_TYPES.has(file.type)) {
+      return NextResponse.json(
+        { error: `نوع الملف غير مسموح به في المكتبة: ${file.type}` },
+        { status: 415 },
+      );
+    }
+
+    /* 4️⃣ التحقق من حجم الملف */
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json(
+        { error: `حجم الملف يتجاوز الحد المسموح به (20 MB)` },
+        { status: 413 },
+      );
+    }
+
+    // توليد مسار واسم ملف فريد وآمن داخل مجلد library في السحابة
+    const blobPath = safeFilename(file.name);
+
+    /* 5️⃣ تحويل الملف إلى Buffer والرفع المباشر إلى السحابة */
+    const buffer = Buffer.from(await file.arrayBuffer());
+    
+    const blob = await put(blobPath, buffer, {
+      access: 'public', // لكي يتمكن الأطباء والباحثون من تحميل الملف وقراءته
+    });
+
+    /* 6️⃣ إرجاع الرابط السحابي الدائم المستقر المتوافق مع بريسما وقاعدة البيانات */
+    return NextResponse.json({ 
+      success: true, 
+      url: blob.url // سيعيد رابطاً يبدأ بـ https://...vercel-storage.com
+    }, { status: 201 });
+
+  } catch (err) {
+    console.error("❌ [library/upload_cloud_error]", err);
     return NextResponse.json(
-      { error: `نوع الملف غير مسموح به: ${file.type}` },
-      { status: 415 },
+      { error: "حدث خطأ داخلي في الخادم أثناء معالجة الرفع السحابي" }, 
+      { status: 500 }
     );
-
-  /* التحقق من الحجم */
-  const buffer = Buffer.from(await file.arrayBuffer());
-  if (buffer.length > MAX_SIZE)
-    return NextResponse.json(
-      { error: `حجم الملف يتجاوز الحد المسموح (20 MB)` },
-      { status: 413 },
-    );
-
-  /* إنشاء مجلد الرفع إن لم يكن موجوداً */
-  if (!fs.existsSync(UPLOAD_DIR))
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
-  /* حفظ الملف */
-  const filename = safeFilename(file.name);
-  const filePath = path.join(UPLOAD_DIR, filename);
-  await writeFile(filePath, buffer);
-
-  /* المسار النسبي الذي سيُخزَّن في قاعدة البيانات */
-  const publicUrl = `/uploads/library/${filename}`;
-
-  return NextResponse.json({ success: true, url: publicUrl }, { status: 201 });
+  }
 }
 
 /* ─── OPTIONS: للـ CORS preflight ─── */
@@ -88,8 +103,8 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Methods':  'POST, OPTIONS',
-      'Access-Control-Allow-Headers':  'Content-Type, x-admin-token',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, x-admin-token',
     },
   });
 }

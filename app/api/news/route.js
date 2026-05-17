@@ -1,113 +1,134 @@
 /**
  * app/api/news/route.js
- * API للأخبار - إدارة الأخبار في الصفحة الرئيسية
+ * API للأخبار - إدارة الأخبار في الصفحة الرئيسية (مؤمن ومربوط بـ Prisma سحابياً)
+ * GET    → جلب كل الأخبار للزوار (مرتبة تلقائياً من الأحدث للأقدم)
+ * POST   → إضافة خبر جديد للمؤتمر (مؤمن)
+ * PATCH  → تعديل تفاصيل خبر موجود (مؤمن)
+ * DELETE → حذف خبر نهائياً (مؤمن)
  */
 
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { randomUUID } from "crypto";
+import { PrismaClient } from "@prisma/client";
 
-const DATA_FILE = path.join(process.cwd(), "data", "news.json");
+const prisma = new PrismaClient();
 
-function ensureFile() {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "[]");
+// منع التخزين المؤقت (Caching) لضمان ظهور الأخبار العاجلة للمتابعين فور نشرها
+export const dynamic = 'force-dynamic';
+
+// دالة التحقق من التوكن السري للإدارة لحماية العمليات الحساسة
+function checkAuth(req) {
+  return req.headers.get('x-admin-token') === process.env.ADMIN_TOKEN;
 }
 
-function readItems() {
-  ensureFile();
-  try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-  } catch {
-    return [];
-  }
-}
-
-function writeItems(items) {
-  ensureFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(items, null, 2));
-}
-
-// GET: جلب كل الأخبار (مرتبة حسب التاريخ)
+// ─── GET: جلب كل الأخبار (مرتبة تلقائياً حسب تاريخ الإنشاء) ───
 export async function GET() {
-  const items = readItems();
-  // ترتيب من الأحدث إلى الأقدم
-  items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  return NextResponse.json({ items });
+  try {
+    // جلب الأخبار المنشورة فقط، أو جلبها بالكامل وفرزها من الأحدث للأقدم
+    const items = await prisma.news.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return NextResponse.json({ items });
+  } catch (error) {
+    console.error("❌ [news_fetch_error]", error);
+    return NextResponse.json({ error: "حدث خطأ أثناء جلب مستجدات الأخبار" }, { status: 500 });
+  }
 }
 
-// POST: إضافة خبر جديد
+// ─── POST: إضافة خبر جديد (مؤمن) ───
 export async function POST(req) {
-  const body = await req.json();
-  const { title, date, icon = "📰", content, published = true } = body;
-
-  if (!title || !content) {
-    return NextResponse.json(
-      { error: "العنوان والمحتوى مطلوبان" },
-      { status: 400 }
-    );
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const items = readItems();
-  const newItem = {
-    id: randomUUID(),
-    title,
-    date: date || new Date().toLocaleDateString("ar-EG"),
-    icon,
-    content,
-    published,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    const body = await req.json();
+    const { title, date, icon = "📰", content, published = true } = body;
 
-  items.push(newItem);
-  writeItems(items);
-  return NextResponse.json({ item: newItem }, { status: 201 });
+    if (!title?.trim() || !content?.trim()) {
+      return NextResponse.json(
+        { error: "العنوان والمحتوى حقول مطلوبة لإتمام النشر" },
+        { status: 400 }
+      );
+    }
+
+    // صياغة التاريخ بصيغة مقروءة محلياً في حال عدم إرساله من الواجهة
+    const finalDate = date || new Date().toLocaleDateString("ar-EG");
+
+    const newItem = await prisma.news.create({
+      data: {
+        title: title.trim(),
+        date: finalDate,
+        icon: icon.trim(),
+        content: content.trim(),
+        published: Boolean(published)
+      }
+    });
+
+    return NextResponse.json({ item: newItem }, { status: 201 });
+  } catch (error) {
+    console.error("❌ [news_create_error]", error);
+    return NextResponse.json({ error: "حدث خطأ في الخادم أثناء إضافة الخبر" }, { status: 500 });
+  }
 }
 
-// PATCH: تعديل خبر
+// ─── PATCH: تعديل خبر (مؤمن) ───
 export async function PATCH(req) {
-  const body = await req.json();
-  const { id, ...updates } = body;
-
-  if (!id) {
-    return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const items = readItems();
-  const index = items.findIndex((i) => i.id === id);
+  try {
+    const body = await req.json();
+    const { id, ...updates } = body;
 
-  if (index === -1) {
-    return NextResponse.json({ error: "الخبر غير موجود" }, { status: 404 });
+    if (!id) {
+      return NextResponse.json({ error: "معرف الخبر (id) مطلوب" }, { status: 400 });
+    }
+
+    // تحويل المعرّف ذكياً بناءً على نوع الحقل في قاعدة بياناتك (Int أو String)
+    const targetId = isNaN(id) ? id : parseInt(id);
+
+    // استبعاد حقول الحماية لمنع تعديلها بالخطأ
+    delete updates.id;
+    delete updates.createdAt;
+    if (updates.published !== undefined) updates.published = Boolean(updates.published);
+
+    const updatedItem = await prisma.news.update({
+      where: { id: targetId },
+      data: updates
+    });
+
+    return NextResponse.json({ item: updatedItem });
+  } catch (error) {
+    console.error("❌ [news_update_error]", error);
+    return NextResponse.json({ error: "الخبر غير موجود أو البيانات المرسلة غير صالحة" }, { status: 500 });
   }
-
-  items[index] = {
-    ...items[index],
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
-
-  writeItems(items);
-  return NextResponse.json({ item: items[index] });
 }
 
-// DELETE: حذف خبر
+// ─── DELETE: حذف خبر نهائياً (مؤمن) ───
 export async function DELETE(req) {
-  const id = new URL(req.url).searchParams.get("id");
-
-  if (!id) {
-    return NextResponse.json({ error: "id مطلوب" }, { status: 400 });
+  if (!checkAuth(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const items = readItems();
-  const filtered = items.filter((i) => i.id !== id);
+  try {
+    const id = new URL(req.url).searchParams.get("id");
 
-  if (filtered.length === items.length) {
-    return NextResponse.json({ error: "الخبر غير موجود" }, { status: 404 });
+    if (!id) {
+      return NextResponse.json({ error: "معرف الخبر (id) مطلوب كـ Parameter" }, { status: 400 });
+    }
+
+    const targetId = isNaN(id) ? id : parseInt(id);
+
+    await prisma.news.delete({
+      where: { id: targetId }
+    });
+
+    return NextResponse.json({ success: true, message: "تم حذف الخبر بنجاح من شريط المستجدات" });
+  } catch (error) {
+    console.error("❌ [news_delete_error]", error);
+    return NextResponse.json({ error: "الخبر غير موجود بالفعل أو حدث خطأ داخلي" }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
   }
-
-  writeItems(filtered);
-  return NextResponse.json({ success: true });
 }
