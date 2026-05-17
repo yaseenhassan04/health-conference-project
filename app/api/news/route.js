@@ -11,9 +11,6 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 
-const prisma = new PrismaClient();
-
-// منع التخزين المؤقت (Caching) لضمان ظهور الأخبار العاجلة للمتابعين فور نشرها
 export const dynamic = 'force-dynamic';
 
 // دالة التحقق من التوكن السري للإدارة لحماية العمليات الحساسة
