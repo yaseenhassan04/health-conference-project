@@ -9,12 +9,12 @@ const B = '#1B365D', R = '#C8102E', G = '#D4AF37';
 const STAT_ICONS  = ['🎤','🔬','👥','🌍'];
 const STAT_COLORS = [R, B, '#0e7490', '#047857'];
 const TARGETS     = { speakers:20, sessions:15, attendees:1000, countries:5 };
-const MEDIA_ITEMS = [
-  { src:'/hospital-side.jpg' },
-  { src:'/gallery/img2.jpg' },
-  { src:'/gallery/img3.jpg' },
-  { src:'/gallery/img4.jpg' },
-  { src:'/gallery/img5.jpg' },
+const MEDIA_ITEMS_FALLBACK = [
+{ src:'/hospital-side.jpg', captionAr:'مجمع ميران الطبي',    captionEn:'Nasser Medical Complex', tag:'مستشفى',   tagEn:'Hospital'   },
+{ src:'/gallery/img2.jpg',  captionAr:'حفل الافتتاح',        captionEn:'Opening Ceremony',       tag:'فعاليات',  tagEn:'Events'     },
+{ src:'/gallery/img3.jpg',  captionAr:'ورشة عمل طبية',      captionEn:'Medical Workshop',       tag:'ورش',      tagEn:'Workshops'  },
+{ src:'/gallery/img4.jpg',  captionAr:'المتحدثون الدوليون',  captionEn:"Int'l Speakers",         tag:'متحدثون',  tagEn:'Speakers'   },
+{ src:'/gallery/img5.jpg',  captionAr:'جلسة التحكيم',        captionEn:'Review Session',         tag:'جلسات',    tagEn:'Sessions'   },
 ];
 
 /* ─── Translations (outside component) ─── */
@@ -34,7 +34,7 @@ const TRANSLATIONS = {
     presidentQuote:'قال تعالى: {وَقُلِ اعْمَلُوا فَسَيَرَى اللَّهُ عَمَلَكُمْ وَرَسُولُهُ وَالْمُؤْمِنُونَ}.\n\nالزملاء الأعزاء، بعد ثلاث سنوات من قهر العدوان، نعود لنوقد شعلة العلم. ننحني إجلالاً لشهدائنا وأسرانا وجرحانا من الكوادر الطبية الذين جسدوا أسمى معاني التضحية. شكراً لكل يدٍ ستبني نجاح مؤتمرنا الباطني الثاني عشر.\n\nوفقكم الله لما يحب ويرضى.',
     presidentFooter:'رئيس المؤتمر الطبي الدولي · 2026',
     mediaCaptions:[{caption:'مجمع ميران الطبي',tag:'مستشفى'},{caption:'حفل الافتتاح',tag:'فعاليات'},{caption:'ورشة عمل طبية',tag:'ورش'},{caption:'المتحدثون الدوليون',tag:'متحدثون'},{caption:'جلسة التحكيم',tag:'جلسات'}],
-    president:{ name:'د. أحمد جمعة الروبي', role:'رئيس المؤتمر', title:'مدير قسم الباطنة — استشاري الأمراض الباطنية', bio:'طبيب استشاري متخصص في الأمراض الباطنية، يشغل منصب مدير قسم الباطنة، وله خبرة واسعة في إدارة الحالات الطبية المعقدة والإشراف على البحث العلمي.', email:'rubai@medical.edu', phone:'+970-8-2816-1010', image:'/Mohamed_El_Rouby.jpg', expertise:['الأمراض الباطنية','إدارة الأقسام','البحث العلمي'] },
+    president:{ name:'د. أحمد جمعة الروبي', role:'رئيس المؤتمر', title:'مدير مشفى الباطنة — استشاري الأمراض الباطنية', bio:'طبيب استشاري متخصص في الأمراض الباطنية، يشغل منصب مدير قسم الباطنة، وله خبرة واسعة في إدارة الحالات الطبية المعقدة والإشراف على البحث العلمي.', email:'rubai@medical.edu', phone:'+970-8-2816-1010', image:'/Mohamed_El_Rouby.jpg', expertise:['الأمراض الباطنية','إدارة الأقسام','البحث العلمي'] },
     supervisor:{ name:'د. عمرو الأسطل', role:'المشرف العام', title:'استشاري الأمراض الرئوية والعناية المركزة — أمريكا', bio:'استشاري دولي في الأمراض الرئوية والعناية المركزة، متمرس في المستشفيات الأمريكية، ويُشرف على الجانب العلمي والتنظيمي للمؤتمر.', email:'astal@medical.edu', phone:'+1-555-000-1234', image:'/Amr_Al_Astal.jpg', expertise:['الأمراض الرئوية','العناية المركزة','الطب الدولي'] },
     committees:[
       {name:'اللجنة التحضيرية',icon:'🏗️',desc:'تشرف على التخطيط العام للمؤتمر وتنسيق الجدول الزمني.',members:['د. محمد خطاب قنديل'],head:{ name:'د. محمد خطاب قنديل', title:'استشاري طب الطوارئ والحالات الحرجة', bio:'استشاري طب الطوارئ والحالات الحرجة، يعمل حاليا في غزة وسابقا في الدوحة. حاصل على البورد العربي والزمالة البريطانية في تخصصه.', email:'khatab@medical.edu', phone:'+970-8-2816-2020', image:'/Mohamed_Khattab_Qandil.jpg', expertise:['طب الطوارئ','الحالات الحرجة','التعليم الطبي'] }},
@@ -42,7 +42,7 @@ const TRANSLATIONS = {
       {name:'اللجنة الإعلامية',icon:'📢',desc:'تتولى التغطية الصحفية وإدارة منصات التواصل والموقع.',members:['د. مازن سليمان صافي'],head:{ name:'د. مازن سليمان صافي', title:'رئيس قسم الأدوية المخدرة والمراقبة — مجمع ناصر الطبي', bio:'رئيس قسم الأدوية المخدرة والمراقبة بمجمع ناصر الطبي، نائب مدير الصيدلية. متخصص في الإعلام الطبي وكاتب محتوى احترافي دولي.', email:'mazen@nasermedical.edu', phone:'+970-8-2822-2222', image:'/Mazen_Suleiman_Safi.jpg', expertise:['الأدوية المخدرة','إدارة الصيدلية','الإعلام الطبي','القيادة والتدريب'] }},
     ],
     news:[
-      {title:'فتح باب استقبال الأبحاث',date:'١ مايو ٢٠٢٦',icon:'📋',content:'نعلمكم أنه تم فتح باب استقبال الأبحاث العلمية ابتداءً من 1/5/2026 وحتى 30/6/2026.'},
+      {title:'فتح باب استقبال الأبحاث',date:'١ مايو ٢٠٢٦',icon:'📋',content:'نعلمكم أنه تم فتح باب استقبال الأبحاث العلمية ابتداءً من 1/5/2026 وحتى 30/9/2026.'},
       {title:'تأكيد مشاركة متحدثين دوليين',date:'٢٠ أبريل ٢٠٢٦',icon:'🌍',content:'يسعدنا الإعلان عن تأكيد مشاركة متحدثين دوليين من أوروبا وأمريكا.'},
       {title:'موعد المؤتمر ٤-٥ ديسمبر ٢٠٢٦',date:'١ أبريل ٢٠٢٦',icon:'📅',content:'يُعقد المؤتمر في مجمع ميران الطبي، غزة، بتاريخ 4-5 ديسمبر 2026.'},
     ],
@@ -239,6 +239,33 @@ export default function Home() {
   const [dragStart,        setDragStart]        = useState(0);
   const [dragDelta,        setDragDelta]        = useState(0);
   const [videoOpen,        setVideoOpen]        = useState(false);
+  const [mediaItems, setMediaItems] = useState(MEDIA_ITEMS_FALLBACK);
+  const [newsItems, setNewsItems] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  
+  useEffect(() => {
+    fetch('/api/gallery/media')
+      .then(r => r.json())
+      .then(d => {
+        if (d.items && d.items.length > 0) setMediaItems(d.items);
+      })
+      .catch(() => {});
+  }, []);
+  
+  // جلب الأخبار من API
+  useEffect(() => {
+    fetch('/api/news')
+      .then(res => res.json())
+      .then(data => {
+        const published = data.items?.filter(item => item.published !== false) || [];
+        setNewsItems(published);
+        setNewsLoading(false);
+      })
+      .catch(() => {
+        setNewsLoading(false);
+      });
+  }, []);
+
   const [hoveredStat,      setHoveredStat]      = useState(null);
   const [hoveredNews,      setHoveredNews]      = useState(null);
   const [hoveredLeader,    setHoveredLeader]    = useState(null);
@@ -303,15 +330,15 @@ export default function Home() {
 
   /* ── autoplay slider ── */
   useEffect(() => {
-    autoPlay.current = setInterval(() => setActiveSlide(p => (p + 1) % MEDIA_ITEMS.length), 5000);
+    autoPlay.current = setInterval(() => setActiveSlide(p => (p + 1) % mediaItems.length), 5000);
     return () => clearInterval(autoPlay.current);
-  }, []);
+  }, [mediaItems.length]);
 
   /* ── helpers ── */
   const goTo = (idx) => {
-    setActiveSlide((idx + MEDIA_ITEMS.length) % MEDIA_ITEMS.length);
+    setActiveSlide((idx + mediaItems.length) % mediaItems.length);
     clearInterval(autoPlay.current);
-    autoPlay.current = setInterval(() => setActiveSlide(p => (p + 1) % MEDIA_ITEMS.length), 5000);
+    autoPlay.current = setInterval(() => setActiveSlide(p => (p + 1) % mediaItems.length), 5000);
   };
   const onDragStart = x => { setIsDragging(true); setDragStart(x); setDragDelta(0); };
   const onDragMove  = x => { if (!isDragging) return; setDragDelta(x - dragStart); };
@@ -339,8 +366,6 @@ export default function Home() {
 
   /* ════════════════════════════
      SUB-COMPONENTS
-     (defined inside render so they close over state,
-      but memoised to avoid full remount on every render)
   ════════════════════════════ */
 
   /* ── SidebarRight ── */
@@ -427,27 +452,39 @@ export default function Home() {
     <>
       <PresidentQuoteSlide t={t} isRtl={isRtl} />
 
-      {/* NEWS */}
+      {/* NEWS - جلب من API */}
       <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${B}12`, overflow:'hidden', boxShadow:'0 3px 14px rgba(27,54,93,0.07)' }}>
         <div style={{ padding:'12px 16px', background:`linear-gradient(135deg,${B}06,${R}05)`, borderBottom:`1px solid ${B}0c`, display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ width:30, height:30, borderRadius:9, background:R, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📰</div>
           <span style={{ fontSize:14, fontWeight:900, color:B }}>{t.newsTitle}</span>
           <div style={{ marginLeft:'auto', width:8, height:8, borderRadius:'50%', background:'#22c55e', animation:'pulse-dot 1.2s ease-in-out infinite' }}/>
         </div>
-        {t.news.map((n, i) => (
-          <div key={i}
-            onClick={() => setModal({ type:'news', data:n })}
-            onMouseEnter={() => setHoveredNews(i)}
-            onMouseLeave={() => setHoveredNews(null)}
-            style={{ padding:'14px 16px', borderBottom: i < t.news.length - 1 ? `1px solid ${B}08` : 'none', cursor:'pointer', background: hoveredNews === i ? `${[R,G,B][i]}07` : '#fff', [isRtl ? 'borderRight' : 'borderLeft']:`3px solid ${[R,G,B][i]}`, transition:'background 0.25s, transform 0.22s', transform: hoveredNews === i ? (isRtl ? 'translateX(-4px)' : 'translateX(4px)') : 'translateX(0)' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
-              <div style={{ width:28, height:28, borderRadius:7, background:`${[R,G,B][i]}12`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, transition:'transform 0.25s', transform: hoveredNews === i ? 'scale(1.15) rotate(-5deg)' : 'scale(1)' }}>{n.icon}</div>
-              <span style={{ fontSize:11, fontWeight:700, color:'#94a3b8' }}>{n.date}</span>
-            </div>
-            <div style={{ fontSize:13.5, fontWeight:800, color:B, lineHeight:1.5 }}>{n.title}</div>
-            <div style={{ fontSize:12, color:'#94a3b8', marginTop:3, lineHeight:1.5, overflow:'hidden', textOverflow:'ellipsis', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{n.content}</div>
+        
+        {newsLoading ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ fontSize: 12 }}>⏳ جاري تحميل الأخبار...</div>
           </div>
-        ))}
+        ) : newsItems.length === 0 ? (
+          <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
+            <div style={{ fontSize: 24, marginBottom: 8 }}>📭</div>
+            <div style={{ fontSize: 12 }}>لا توجد أخبار حالياً</div>
+          </div>
+        ) : (
+          newsItems.map((n, i) => (
+            <div key={n.id}
+              onClick={() => setModal({ type:'news', data:n })}
+              onMouseEnter={() => setHoveredNews(i)}
+              onMouseLeave={() => setHoveredNews(null)}
+              style={{ padding:'14px 16px', borderBottom: i < newsItems.length - 1 ? `1px solid ${B}08` : 'none', cursor:'pointer', background: hoveredNews === i ? `${[R,G,B][i % 3]}07` : '#fff', [isRtl ? 'borderRight' : 'borderLeft']:`3px solid ${[R,G,B][i % 3]}`, transition:'background 0.25s, transform 0.22s', transform: hoveredNews === i ? (isRtl ? 'translateX(-4px)' : 'translateX(4px)') : 'translateX(0)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
+                <div style={{ width:28, height:28, borderRadius:7, background:`${[R,G,B][i % 3]}12`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, transition:'transform 0.25s', transform: hoveredNews === i ? 'scale(1.15) rotate(-5deg)' : 'scale(1)' }}>{n.icon || '📰'}</div>
+                <span style={{ fontSize:11, fontWeight:700, color:'#94a3b8' }}>{n.date}</span>
+              </div>
+              <div style={{ fontSize:13.5, fontWeight:800, color:B, lineHeight:1.5 }}>{n.title}</div>
+              <div style={{ fontSize:12, color:'#94a3b8', marginTop:3, lineHeight:1.5, overflow:'hidden', textOverflow:'ellipsis', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{n.content}</div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* QUICK LINKS */}
@@ -469,7 +506,7 @@ export default function Home() {
       </div>
     </>
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [t, isRtl, hoveredNews, hoveredLink]);
+  ), [t, isRtl, newsItems, newsLoading, hoveredNews, hoveredLink]);
 
   /* ════════════════════════════
      JSX
@@ -518,20 +555,20 @@ export default function Home() {
         .sidebar-r,.sidebar-l{display:flex;flex-direction:column;gap:16px;width:300px;flex-shrink:0;}
 
         @media(max-width:1099px){
-  .main-layout{
-    flex-direction:column !important;
-    gap:16px;
-    width:100% !important;
-    max-width:100% !important;
-    align-items:stretch !important;
-  }
-  .sidebar-r,.sidebar-l{
-    width:100% !important;
-    max-width:100% !important;
-    position:static !important;
-    border-radius:0 !important;
-  }
-}
+          .main-layout{
+            flex-direction:column !important;
+            gap:16px;
+            width:100% !important;
+            max-width:100% !important;
+            align-items:stretch !important;
+          }
+          .sidebar-r,.sidebar-l{
+            width:100% !important;
+            max-width:100% !important;
+            position:static !important;
+            border-radius:0 !important;
+          }
+        }
         @media(max-width:639px){
           .stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important;}
           .thumb-item{width:60px!important;height:42px!important;}
@@ -552,35 +589,35 @@ export default function Home() {
       </div>
 
       {/* ══ MAIN LAYOUT ══ */}
-<div className="main-layout" style={{ 
-  maxWidth: isMobile || isTablet ? '100%' : 1560, 
-  margin: '0 auto', 
-  padding: isMobile ? '14px 12px 0' : isTablet ? '16px 14px 0' : '22px 18px 0', 
-  position: 'relative', 
-  zIndex: 1,
-  width: '100%',
-  boxSizing: 'border-box',
-}}>
+      <div className="main-layout" style={{ 
+        maxWidth: isMobile || isTablet ? '100%' : 1560, 
+        margin: '0 auto', 
+        padding: isMobile ? '14px 12px 0' : isTablet ? '16px 14px 0' : '22px 18px 0', 
+        position: 'relative', 
+        zIndex: 1,
+        width: '100%',
+        boxSizing: 'border-box',
+      }}>
         {/* RIGHT SIDEBAR */}
-       {!isMobile && !isTablet && (
-  <aside className="sidebar-r gold-glow-card" style={{
-    position: 'sticky', top: STICKY_TOP,
-    borderRadius: 18,
-    animation: 'slide-in-right 0.7s cubic-bezier(0.22,1,0.36,1) both',
-  }}>
-    <SidebarRight />
-  </aside>
-)}
+        {!isMobile && !isTablet && (
+          <aside className="sidebar-r gold-glow-card" style={{
+            position: 'sticky', top: STICKY_TOP,
+            borderRadius: 18,
+            animation: 'slide-in-right 0.7s cubic-bezier(0.22,1,0.36,1) both',
+          }}>
+            <SidebarRight />
+          </aside>
+        )}
 
         {/* CENTER */}
         <div style={{ flex:1, minWidth:0 }}>
 
           {/* HERO */}
           {(isMobile || isTablet) && (
-  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
-    <SidebarRight />
-  </div>
-)}
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
+              <SidebarRight />
+            </div>
+          )}
           <div style={{ ...rev('hero', 0), borderRadius: isMobile ? 14 : 22, overflow:'hidden', marginBottom: isMobile ? 14 : 22, boxShadow:`0 0 0 3px ${G}50,0 12px 40px rgba(27,54,93,0.15)`, position:'relative', animation: visible['hero'] ? 'hero-fade 1s cubic-bezier(0.22,1,0.36,1) both' : 'none' }}>
             <img src="/hero-banner.png" alt={isRtl ? 'شعار المؤتمر' : 'Conference Banner'}
               style={{ width:'100%', display:'block', objectFit:'cover', objectPosition:'center top', minHeight: isMobile ? 180 : 260, maxHeight: isMobile ? 220 : isTablet ? 300 : 360 }}
@@ -631,7 +668,7 @@ export default function Home() {
                   onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
                   ▶ {t.videoLabel}
                 </button>
-                <div style={{ fontSize:11, fontWeight:700, color:'#9A7A10', background:`${G}15`, border:`1px solid ${G}30`, padding:'4px 12px', borderRadius:20, direction:'ltr' }}>{activeSlide + 1}/{MEDIA_ITEMS.length}</div>
+                <div style={{ fontSize:11, fontWeight:700, color:'#9A7A10', background:`${G}15`, border:`1px solid ${G}30`, padding:'4px 12px', borderRadius:20, direction:'ltr' }}>{activeSlide + 1}/{mediaItems.length}</div>
               </div>
             </div>
 
@@ -641,7 +678,7 @@ export default function Home() {
               onTouchStart={e => onDragStart(e.touches[0].clientX)} onTouchMove={e => { e.preventDefault(); onDragMove(e.touches[0].clientX); }} onTouchEnd={onDragEnd}>
 
               <div className={`slide-track${isDragging ? ' drag' : ''}`} style={{ transform: slideTranslate }}>
-                {MEDIA_ITEMS.map((item, i) => {
+                {mediaItems.map((item, i) => {
                   const meta = t.mediaCaptions[i] || { caption:'', tag:'' };
                   return (
                     <div key={i} style={{ minWidth:'100%', height:SLIDE_H, position:'relative', flexShrink:0, background:`linear-gradient(135deg,${G}12,#EBF0F8)` }}>
@@ -660,7 +697,7 @@ export default function Home() {
                       <div style={{ position:'absolute', bottom:0, left:0, right:0, padding: isMobile ? '20px 16px 12px' : '32px 26px 18px', pointerEvents:'none', animation: i === activeSlide ? 'slide-caption 0.55s cubic-bezier(0.22,1,0.36,1) both' : 'none' }}>
                         <div style={{ fontSize: isMobile ? 13 : 16, fontWeight:800, color:'#fff', textShadow:'0 2px 8px rgba(0,0,0,0.4)' }}>{meta.caption}</div>
                         <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:6 }}>
-                          {MEDIA_ITEMS.map((_, di) => (
+                          {mediaItems.map((_, di) => (
                             <div key={di} style={{ width: di === i ? 18 : 6, height:6, borderRadius:4, background: di === i ? G : 'rgba(255,255,255,0.4)', transition:'all .35s' }}/>
                           ))}
                         </div>
@@ -683,7 +720,7 @@ export default function Home() {
             {/* Thumbnails */}
             {!isMobile && (
               <div style={{ display:'flex', gap:8, padding:'12px 16px', overflowX:'auto', background:'#F4F6FA', scrollbarWidth:'none', borderTop:`1px solid ${B}08` }}>
-                {MEDIA_ITEMS.map((item, i) => {
+                {mediaItems.map((item, i) => {
                   const meta = t.mediaCaptions[i] || {};
                   return (
                     <div key={i} className={`thumb-item${i === activeSlide ? ' active' : ''}`} onClick={() => goTo(i)}>

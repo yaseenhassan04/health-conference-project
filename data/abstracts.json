@@ -18,10 +18,10 @@
     "email": "zz@gmail.com",
     "filename": "1777195973250-محمد-.pdf",
     "filepath": "/uploads/research/1777195973250-محمد-.pdf",
-    "status": "accepted",
+    "status": "rejected",
     "submittedAt": "2026-04-26T09:32:53.251Z",
     "createdAt": "2026-04-26T09:32:53.251Z",
-    "updatedAt": "2026-04-26T09:33:11.742Z"
+    "updatedAt": "2026-05-14T06:09:01.768Z"
   },
   {
     "id": 1777789228017,
@@ -30,9 +30,10 @@
     "email": "yaseenhassanyrh@gmai.com",
     "filename": "1777789228017-ياسين-حسان.pdf",
     "filepath": "/uploads/research/1777789228017-ياسين-حسان.pdf",
-    "status": "pending",
+    "status": "accepted",
     "submittedAt": "2026-05-03T06:20:28.021Z",
-    "createdAt": "2026-05-03T06:20:28.021Z"
+    "createdAt": "2026-05-03T06:20:28.021Z",
+    "updatedAt": "2026-05-17T07:30:33.428Z"
   },
   {
     "id": 1777789602972,
@@ -69,7 +70,7 @@
     "status": "accepted",
     "submittedAt": "2026-05-03T06:33:58.144Z",
     "createdAt": "2026-05-03T06:33:58.144Z",
-    "updatedAt": "2026-05-03T09:50:34.750Z"
+    "updatedAt": "2026-05-17T07:31:18.034Z"
   },
   {
     "id": 1777792548032,
@@ -79,10 +80,10 @@
     "category": "General",
     "filename": "1777792548032-ياسين-ح-م-حسان.pdf",
     "filepath": "/uploads/research/1777792548032-ياسين-ح-م-حسان.pdf",
-    "status": "accepted",
+    "status": "rejected",
     "submittedAt": "2026-05-03T07:15:48.041Z",
     "createdAt": "2026-05-03T07:15:48.041Z",
-    "updatedAt": "2026-05-03T08:53:52.670Z"
+    "updatedAt": "2026-05-14T06:08:44.617Z"
   },
   {
     "id": 1777801553315,
@@ -104,10 +105,10 @@
     "category": "General",
     "filename": "1777801706937-د.محمد-قنديل-.pdf",
     "filepath": "/uploads/research/1777801706937-د.محمد-قنديل-.pdf",
-    "status": "accepted",
+    "status": "rejected",
     "submittedAt": "2026-05-03T09:48:26.939Z",
     "createdAt": "2026-05-03T09:48:26.939Z",
-    "updatedAt": "2026-05-03T09:49:25.319Z"
+    "updatedAt": "2026-05-14T06:10:15.424Z"
   },
   {
     "id": 1777801968602,
@@ -132,6 +133,6 @@
     "status": "rejected",
     "submittedAt": "2026-05-10T05:22:12.197Z",
     "createdAt": "2026-05-10T05:22:12.197Z",
-    "updatedAt": "2026-05-10T05:22:54.230Z"
+    "updatedAt": "2026-05-17T07:30:27.245Z"
   }
 ]
