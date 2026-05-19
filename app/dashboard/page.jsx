@@ -1,6 +1,6 @@
 "use client";
 /**
- * dashboard/page.jsx
+ * ى/page.jsx
  * الصفحة الرئيسية — تعرض Cards بناءً على role اليوزر
  */
 

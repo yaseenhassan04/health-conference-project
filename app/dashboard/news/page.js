@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-
 const B = "#1B365D";
 const R = "#C8102E";
 const G = "#D4AF37";
