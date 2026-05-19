@@ -26,15 +26,14 @@ export async function POST(req) {
       return NextResponse.json({ error: "نوع الملف غير مدعوم" }, { status: 400 });
     }
 
-    // توليد اسم فريد للملف لمنع التداخل
     const filename = `${Date.now()}-${file.name}`;
 
-    // الرفع المباشر إلى Vercel Blob Store الخاص بك
+    // الرفع المباشر باستخدام التوكن المخصص للمخزن العام الجديد
     const blob = await put(filename, file, {
-      access: 'private', // ليكون الرابط متاحاً للزوار في الموقع
+      access: 'public',
+      token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN, // التوكن الجديد لمنع التضارب
     });
 
-    // الـ blob.url يحتوي على الرابط المباشر الجديد للصورة
     return NextResponse.json({ success: true, url: blob.url });
 
   } catch (err) {
