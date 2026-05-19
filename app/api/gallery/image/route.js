@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { getDownloadUrl } from "@vercel/blob";
 
 export const dynamic = 'force-dynamic';
 
@@ -12,14 +11,27 @@ export async function GET(req) {
   }
 
   try {
-    // توليد رابط مؤقت صالح لـ 10 دقائق
-    const { url } = await getDownloadUrl(blobUrl, {
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      expiresIn: 600,
+    // ✅ الطريقة الصحيحة: fetch الصورة مباشرة بالتوكن
+    const response = await fetch(blobUrl, {
+      headers: {
+        Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+      },
     });
 
-    // Redirect للرابط المؤقت
-    return NextResponse.redirect(url);
+    if (!response.ok) {
+      throw new Error(`Blob fetch failed: ${response.status}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+
+    return new NextResponse(buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
   } catch (err) {
     console.error("❌ [image proxy]", err);
     return new NextResponse("فشل", { status: 500 });

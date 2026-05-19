@@ -3,7 +3,13 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 import { useLang } from '@/context/LangContext';
-
+function proxyImg(url) {
+  if (!url) return "";
+  if (url.includes("vercel-storage.com") || url.includes("blob.vercel")) {
+    return `/api/gallery/image?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
 /* ─── Constants (outside component to avoid re-creation) ─── */
 const B = '#1B365D', R = '#C8102E', G = '#D4AF37';
 const STAT_ICONS  = ['🎤','🔬','👥','🌍'];
@@ -682,7 +688,7 @@ export default function Home() {
                   const meta = t.mediaCaptions[i] || { caption:'', tag:'' };
                   return (
                     <div key={i} style={{ minWidth:'100%', height:SLIDE_H, position:'relative', flexShrink:0, background:`linear-gradient(135deg,${G}12,#EBF0F8)` }}>
-                      <img src={item.src} alt={meta.caption} draggable={false}
+                      <img src={proxyImg(item.src)} alt={meta.caption} draggable={false}
                         style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }}
                         onError={e => {
                           e.currentTarget.style.display = 'none';
@@ -724,7 +730,7 @@ export default function Home() {
                   const meta = t.mediaCaptions[i] || {};
                   return (
                     <div key={i} className={`thumb-item${i === activeSlide ? ' active' : ''}`} onClick={() => goTo(i)}>
-                      <img src={item.src} alt={meta.caption || ''} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }} onError={e => { e.currentTarget.style.display = 'none'; }}/>
+                      <img src={proxyImg(item.src)} alt={meta.caption || ''} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }} onError={e => { e.currentTarget.style.display = 'none'; }}/>
                       {i === activeSlide && <div style={{ position:'absolute', bottom:0, left:0, right:0, height:3, background:G }}/>}
                     </div>
                   );
