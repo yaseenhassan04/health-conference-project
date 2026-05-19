@@ -31,7 +31,7 @@ export async function POST(req) {
 
     // الرفع المباشر إلى Vercel Blob Store الخاص بك
     const blob = await put(filename, file, {
-      access: 'public', // ليكون الرابط متاحاً للزوار في الموقع
+      access: 'private', // ليكون الرابط متاحاً للزوار في الموقع
     });
 
     // الـ blob.url يحتوي على الرابط المباشر الجديد للصورة
