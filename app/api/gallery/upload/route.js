@@ -18,26 +18,38 @@ export async function POST(req) {
     const file = formData.get("file");
 
     if (!file || typeof file === "string") {
-      return NextResponse.json({ error: "لا يوجد ملف" }, { status: 400 });
+      return NextResponse.json({ error: "لم يتم العثور على ملف مرفوع" }, { status: 400 });
     }
 
-    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowed.includes(file.type)) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
       return NextResponse.json({ error: "نوع الملف غير مدعوم" }, { status: 400 });
     }
 
     const filename = `${Date.now()}-${file.name}`;
 
-    // الرفع المباشر باستخدام التوكن المخصص للمخزن العام الجديد
+    // الرفع إلى المخزن العام
     const blob = await put(filename, file, {
       access: 'public',
-      token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN, // التوكن الجديد لمنع التضارب
+      token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN,
     });
 
-    return NextResponse.json({ success: true, url: blob.url });
+    // سحب الرابط السحابي المتولد
+    const generatedUrl = blob.url;
+
+    // 💡 الحل السحري: إرجاع الرابط بكل المسميات المحتملة التي قد يتوقعها الفرونت إند
+    // ليتعرف عليها تلقائياً ويقوم بحفظها في قاعدة البيانات فوراً دون طلب إدخال يدوي
+    return NextResponse.json({ 
+      success: true, 
+      url: generatedUrl,
+      imageUrl: generatedUrl,
+      image: generatedUrl,
+      link: generatedUrl,
+      path: generatedUrl
+    });
 
   } catch (err) {
     console.error("❌ [Vercel Blob Upload Error]:", err.message);
-    return NextResponse.json({ error: err.message || "خطأ داخلي أثناء الرفع" }, { status: 500 });
+    return NextResponse.json({ error: err.message || "خطأ أثناء الرفع" }, { status: 500 });
   }
 }
