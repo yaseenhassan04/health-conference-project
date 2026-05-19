@@ -11,9 +11,14 @@ import { randomUUID } from "crypto";
 // إجبار الـ Route على العمل بشكل ديناميكي
 export const dynamic = 'force-dynamic';
 
+// ✅ الحل الصحيح لخطأ 413 في Next.js App Router لرفع حد حجم الطلب
+export const sizeLimit = '10mb'; 
+
 // دالة التحقق من التوكن لحماية الرفع من أي استغلال خارجي لوحدة التخزين
 function checkAuth(req) {
-  return req.headers.get('x-admin-token') === process.env.ADMIN_TOKEN;
+  // ✅ أضفنا القيمة الاحتياطية هنا لتطابق الـ Frontend تماماً في حال عدم ضبط الـ env
+  const expectedToken = process.env.ADMIN_TOKEN || "samoud2025";
+  return req.headers.get('x-admin-token') === expectedToken;
 }
 
 export async function POST(req) {
