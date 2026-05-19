@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
-import { randomUUID } from "crypto";
 
 export const dynamic = 'force-dynamic';
 
@@ -27,22 +25,15 @@ export async function POST(req) {
       return NextResponse.json({ error: "نوع الملف غير مدعوم" }, { status: 400 });
     }
 
-    const ext = file.name.split(".").pop() || "jpg";
-    const filename = `gallery/${randomUUID()}.${ext}`;
+    // ✅ Base64 — بدون Blob، تشتغل فوراً بدون proxy
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
-    const blob = await put(filename, buffer, {
-      access: "private",
-      contentType: file.type,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
-
-    return NextResponse.json({ success: true, url: blob.url });
+    return NextResponse.json({ success: true, url: dataUrl });
 
   } catch (err) {
     console.error("❌ [upload]", err.message);
-    // ✅ دائماً رجّع JSON حتى في حالة الخطأ
     return NextResponse.json({ error: err.message || "خطأ داخلي" }, { status: 500 });
   }
 }
