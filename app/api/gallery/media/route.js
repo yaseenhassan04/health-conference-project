@@ -1,22 +1,28 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { put } from "@vercel/blob"; // التأكد من استيراد مكتبة الرفع
 
 const DB_PATH = path.join(process.cwd(), "gallery-db.json");
 
-// دالة مساعدة لقراءة البيانات بأمان وضمان هيكلية مصفوفة items سليم
+// دالة قراءة قاعدة البيانات وتنظيفها من الملفات التالفة الناتجة عن المحاولات السابقة
 function readDb() {
   try {
-    if (!fs.existsSync(DB_PATH)) {
-      return { items: [] };
-    }
+    if (!fs.existsSync(DB_PATH)) return { items: [] };
     const fileContent = fs.readFileSync(DB_PATH, "utf8");
     const data = JSON.parse(fileContent);
     
-    if (!data || !Array.isArray(data.items)) {
-      return { items: Array.isArray(data) ? data : [] };
+    let items = [];
+    if (data && Array.isArray(data.items)) {
+      items = data.items;
+    } else if (Array.isArray(data)) {
+      items = data;
     }
-    return data;
+
+    // 🛡️ تنظيف تلقائي: حذف أي عنصر تالف لا يحتوي على رابط (src) صالح لمنع الشاشة البيضاء
+    const cleanItems = items.filter(item => item && item.src && typeof item.src === 'string' && !item.src.startsWith('undefined') && item.src.trim() !== '');
+    
+    return { items: cleanItems };
   } catch {
     return { items: [] };
   }
@@ -26,62 +32,47 @@ function writeDb(data) {
   try {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
   } catch (err) {
-    console.error("❌ فشل الكتابة في ملف المعرض:", err.message);
+    console.error("❌ فشل كتابة البيانات:", err.message);
   }
 }
 
-// 1. جلب الصور (متوافق 100% مع طلب الفرونت إند)
 export async function GET() {
-  try {
-    const db = readDb();
-    return NextResponse.json(db);
-  } catch (err) {
-    return NextResponse.json({ items: [] });
-  }
+  return NextResponse.json(readDb());
 }
 
-// 2. استقبال وحفظ الصورة تلقائياً بالمسمى المتوقع للفرونت إند (src)
 export async function POST(req) {
   try {
     const body = await req.json();
+    
+    // 💡 الخدعة الذكية: قراءة التوكن الجديد التابع لـ Vercel إذا لم يكن القديم موجوداً
+    const token = process.env.BLOB_READ_WRITE_TOKEN || process.env.PUBLIC_BLOB_READ_WRITE_TOKEN;
 
-    // فحص واستخراج الرابط السحابي المرفوع سلفاً
-    const finalUrl = body.url || body.imageUrl || body.image || body.link || body.src || body.path;
+    // استخراج الرابط المستلم بعد الرفع
+    const finalUrl = body.url || body.imageUrl || body.image || body.link || body.src;
 
-    if (!finalUrl) {
-      return NextResponse.json({ error: "رابط الصورة (URL) مفقود" }, { status: 400 });
+    // 🛑 جدار حماية لمنع حفظ الروابط الفارغة أو التالفة التي تسبب شاشات بيضاء
+    if (!finalUrl || typeof finalUrl !== 'string' || finalUrl.trim() === '' || finalUrl.startsWith('undefined')) {
+      return NextResponse.json({ error: "فشل الرفع السحابي: الرابط المستلم غير صالح أو فارغ" }, { status: 400 });
     }
 
-    const captionAr = body.captionAr || body.caption_ar || body.titleAr || body.title || "";
-    const captionEn = body.captionEn || body.caption_en || body.titleEn || "";
-    const tag = body.tag || "فعاليات";
-    const tagEn = body.tagEn || body.tag_en || "Events";
-
     const db = readDb();
-    
-    // 💡 التعديل الذهبي: حفظ الرابط داخل مفتاح 'src' صراحة ليتوافق مع مخرجات الفرونت إند المعروضة
     const newItem = {
-      src: finalUrl, 
-      captionAr: captionAr,
-      captionEn: captionEn,
-      tag: tag,
-      tagEn: tagEn,
+      src: finalUrl,
+      captionAr: body.captionAr || body.title || "",
+      captionEn: body.captionEn || "",
+      tag: body.tag || "فعاليات",
+      tagEn: body.tagEn || "Events",
       id: Date.now(),
     };
 
     db.items.unshift(newItem);
     writeDb(db);
-
-    // إعادة النتيجة مطابقة تماماً لهيكل دالة الـ GET لمنع انهيار الواجهة
     return NextResponse.json(db);
-
   } catch (err) {
-    console.error("❌ [media POST Error]:", err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-// 3. حذف صورة من المعرض
 export async function DELETE(req) {
   try {
     const { id } = await req.json();
