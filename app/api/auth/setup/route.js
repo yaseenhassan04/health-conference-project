@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
@@ -11,16 +10,25 @@ export async function POST(req) {
     if (setupKey !== 'setup_samoud_2026_once') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
     const hashed = await bcrypt.hash('Admin@2026', 10);
-    const existing = await prisma.admin.findUnique({ where: { username: 'admin' } });
+
+    const existing = await prisma.admin.findUnique({
+      where: { username: 'admin' }
+    });
+
     if (existing) {
       return NextResponse.json({ success: true, status: 'already_exists' });
     }
-    await prisma.admin.create({ data: { username: 'admin', password: hashed } });
+
+    await prisma.admin.create({
+      data: { username: 'admin', password: hashed }
+    });
+
     return NextResponse.json({ success: true, status: 'created' });
+
   } catch (err) {
+    console.error('[setup_error]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
