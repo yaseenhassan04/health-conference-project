@@ -58,10 +58,17 @@ export async function POST(request) {
       );
     }
 
-    // 5. توليد الـ JWT بالصلاحيات المناسبة (تلقائياً admin، أو حسب الحقل المتوفر في قاعدة بياناتك)
-    // ملحوظة: إذا كان جدول الـ schema يحتوي على حقل role و name مررهم هنا، وإلا نستخدم قيم افتراضية آمنة
-    const userRole = user.role || "admin";
-    const displayName = user.name || user.username; 
+    // 5. توليد الـ JWT بالصلاحيات المناسبة
+    // تحديد الدور بناءً على اسم المستخدم
+    let userRole = "admin"; // الافتراضي
+    
+    if (user.username.toLowerCase() === "media_admin") {
+      userRole = "media";
+    } else if (user.username.toLowerCase() === "doctor_admin") {
+      userRole = "doctor";
+    }
+    
+    const displayName = user.username; 
 
     const token = await new SignJWT({
       id:   user.id.toString(), // تحويل الـ id لنص دائماً لتوحيد صيغة الـ Token
