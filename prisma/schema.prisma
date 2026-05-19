@@ -68,3 +68,38 @@ model Admin {
   password  String
   createdAt DateTime @default(now())
 }
+model GalleryMedia {
+  id        Int      @id @default(autoincrement())
+  src       String
+  captionAr String
+  captionEn String   @default("")
+  tag       String   @default("فعاليات")
+  tagEn     String   @default("Events")
+  createdAt DateTime @default(now())
+}
+
+model GalleryScreen {
+  id        Int      @id @default(autoincrement())
+  type      String   @default("link")
+  titleAr   String
+  titleEn   String   @default("")
+  descAr    String   @default("")
+  descEn    String   @default("")
+  icon      String   @default("🖥️")
+  href      String   @default("/media")
+  mediaUrl  String   @default("")
+  embedCode String   @default("")
+  published Boolean  @default(true)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model News {
+  id        Int      @id @default(autoincrement())
+  title     String
+  date      String
+  icon      String   @default("📰")
+  content   String
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
