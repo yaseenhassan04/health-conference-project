@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 import { useLang } from '@/context/LangContext';
+
 function proxyImg(url) {
   if (!url) return "";
   if (url.includes("vercel-storage.com") || url.includes("blob.vercel")) {
@@ -10,28 +11,30 @@ function proxyImg(url) {
   }
   return url;
 }
+
 /* ─── Constants (outside component to avoid re-creation) ─── */
 const B = '#1B365D', R = '#C8102E', G = '#D4AF37';
 const STAT_ICONS  = ['🎤','🔬','👥','🌍'];
 const STAT_COLORS = [R, B, '#0e7490', '#047857'];
 const TARGETS     = { speakers:20, sessions:15, attendees:1000, countries:5 };
+
+// ✅ تم تعديل المصفوفة هنا لتطابق الامتدادات الفعلية لملفاتك لضمان عدم ظهور صور مكسورة
 const MEDIA_ITEMS_FALLBACK = [
-  { src: '/img1.jpeg', captionAr: 'حفل افتتاح المؤتمر العلمي', captionEn: 'Conference Opening Ceremony', tag: 'فعاليات', tagEn: 'Events' },
-  { src: '/img2.jpeg', captionAr: 'جانب من الحضور الكريم', captionEn: 'A Side of Attendees', tag: 'فعاليات', tagEn: 'Events' },
-  { src: '/img3.jpeg', captionAr: 'ورشة العمل الطبية الأولى', captionEn: 'First Medical Workshop', tag: 'ورش', tagEn: 'Workshops' },
-  { src: '/img4.jpeg', captionAr: 'جلسة مناقشة الأبحاث الطبية', captionEn: 'Medical Research Discussion', tag: 'جلسات', tagEn: 'Sessions' },
+  { src: '/img1.jpg', captionAr: 'حفل افتتاح المؤتمر العلمي', captionEn: 'Conference Opening Ceremony', tag: 'فعاليات', tagEn: 'Events' },
+  { src: '/img2.jpg', captionAr: 'جانب من الحضور الكريم', captionEn: 'A Side of Attendees', tag: 'فعاليات', tagEn: 'Events' },
+  { src: '/img3.jpg', captionAr: 'ورشة العمل الطبية الأولى', captionEn: 'First Medical Workshop', tag: 'ورش', tagEn: 'Workshops' },
+  { src: '/img4.jpg', captionAr: 'جلسة مناقشة الأبحاث الطبية', captionEn: 'Medical Research Discussion', tag: 'جلسات', tagEn: 'Sessions' },
   { src: '/img5.jpeg', captionAr: 'المتحدثون الرئيسيون في المؤتمر', captionEn: 'Keynote Speakers', tag: 'متحدثون', tagEn: 'Speakers' },
-  { src: '/img6.jpeg', captionAr: 'تكريم اللجان المنظمة', captionEn: 'Honoring Organizers', tag: 'فعاليات', tagEn: 'Events' },
-  { src: '/img7.jpeg', captionAr: 'المعرض الطبي المصاحب', captionEn: 'Accompanying Medical Exhibition', tag: 'أخرى', tagEn: 'Other' },
-  { src: '/img8.jpeg', captionAr: 'جلسة النقاش الثانية', captionEn: 'Second Discussion Session', tag: 'جلسات', tagEn: 'Sessions' },
+  { src: '/img6.jpg', captionAr: 'تكريم اللجان المنظمة', captionEn: 'Honoring Organizers', tag: 'فعاليات', tagEn: 'Events' },
+  { src: '/img7.jpg', captionAr: 'المعرض الطبي المصاحب', captionEn: 'Accompanying Medical Exhibition', tag: 'أخرى', tagEn: 'Other' },
+  { src: '/img8.jpeg', captionAr: 'جلسة النقاف الثانية', captionEn: 'Second Discussion Session', tag: 'جلسات', tagEn: 'Sessions' },
   { src: '/img9.jpeg', captionAr: 'ورشة عمل طب الباطنة', captionEn: 'Internal Medicine Workshop', tag: 'ورش', tagEn: 'Workshops' },
-  { src: '/img10.jpeg', captionAr: 'استراحة المشاركين', captionEn: 'Participants Break', tag: 'أخرى', tagEn: 'Other' },
-  { src: '/img12.jpeg', captionAr: 'حلقة نقاشية مغلقة', captionEn: 'Closed Panel Discussion', tag: 'جلسات', tagEn: 'Sessions' },
-  { src: '/img13.jpeg', captionAr: 'عرض الأبحاث الملصقة', captionEn: 'Poster Presentations', tag: 'أخرى', tagEn: 'Other' },
-  { src: '/img14.jpeg', captionAr: 'تكريم المتحدثين الدوليين', captionEn: 'Honoring International Speakers', tag: 'متحدثون', tagEn: 'Speakers' },
-  { src: '/img15.jpeg', captionAr: 'الصورة الجماعية الختامية', captionEn: 'Closing Group Photo', tag: 'فعاليات', tagEn: 'Events' },
-  { src: '/img16.jpeg', captionAr: 'مجمع ناصر الطبي', captionEn: 'Nasser Medical Complex', tag: 'مستشفى', tagEn：'Hospital' }
-];
+  { src: '/img10.jpeg', captionAr: 'استراحة المشاركين وتبادل الخبرات', captionEn: 'Participants Break', tag: 'أخرى', tagEn: 'Other' },
+  { src: '/img12.jpg', captionAr: 'حلقة نقاشية مغلقة والأبحاث المقترحة', captionEn: 'Closed Panel Discussion', tag: 'جلسات', tagEn: 'Sessions' },
+  { src: '/img13.jpg', captionAr: 'عرض الأبحاث الطبية والبوسترات', captionEn: 'Poster Presentations', tag: 'أخرى', tagEn: 'Other' },
+  { src: '/img14.jpg', captionAr: 'تكريم المتحدثين الدوليين والمشاركين', captionEn: 'Honoring International Speakers', tag: 'متحدثون', tagEn: 'Speakers' },
+  { src: '/img15.jpg', captionAr: 'الصورة الجماعية الختامية للمؤتمر', captionEn: 'Closing Group Photo', tag: 'فعاليات', tagEn: 'Events' },
+  { src: '/img16.jpg', captionAr: 'مجمع ناصر الطبي المنصة الساندة', captionEn
 
 /* ─── Translations (outside component) ─── */
 const TRANSLATIONS = {
@@ -55,7 +58,7 @@ const TRANSLATIONS = {
     committees:[
       {name:'اللجنة التحضيرية',icon:'🏗️',desc:'تشرف على التخطيط العام للمؤتمر وتنسيق الجدول الزمني.',members:['د. محمد خطاب قنديل'],head:{ name:'د. محمد خطاب قنديل', title:'استشاري طب الطوارئ والحالات الحرجة', bio:'استشاري طب الطوارئ والحالات الحرجة، يعمل حاليا في غزة وسابقا في الدوحة. حاصل على البورد العربي والزمالة البريطانية في تخصصه.', email:'khatab@medical.edu', phone:'+970-8-2816-2020', image:'/Mohamed_Khattab_Qandil.jpg', expertise:['طب الطوارئ','الحالات الحرجة','التعليم الطبي'] }},
       {name:'اللجنة العلمية',icon:'🔬',desc:'مسؤولة عن مراجعة الأبحاث وتحديد المحاور العلمية.',members:['د. محمود الشيخ علي'],head:{ name:'د. محمود الشيخ علي', title:'استشاري الطب الباطني والمناظير', bio:'استشاري الطب الباطني والمناظير مع خبرة عميقة في مجاله. حاصل على الزمالة البريطانية في الطب الباطني.', email:'drmnali@gmail.com', phone:'+972-56-703-3314', image:'/Mahmoud_Al_Sheikh_Ali.jpg', expertise:['الطب الباطني','المناظير','تقييم الأبحاث'] }},
-      {name:'اللجنة الإعلامية',icon:'📢',desc:'تتولى التغطية الصحفية وإدارة منصات التواصل والموقع.',members:['د. مازن سليمان صافي'],head:{ name:'د. مازن سليمان صافي', title:'رئيس قسم الأدوية المخدرة والمراقبة — مجمع ناصر الطبي', bio:'رئيس قسم الأدوية المخدرة والمراقبة بمجمع ناصر الطبي، نائب مدير الصيدلية. متخصص في الإعلام الطبي وكاتب محتوى احترافي دولي.', email:'mazen@nasermedical.edu', phone:'+970-8-2822-2222', image:'/Mazen_Suleiman_Safi.jpg', expertise:['الأدوية المخدرة','إدارة الصيدلية','الإعلام الطبي','القيادة والتدريب'] }},
+      {name:'اللجنة الإعلامية',icon:'📢',desc:'تتولى التغطية الصحفية وإدارة منصات التواصل والموقع.',members:['د. مازن سليمان صافي'],head:{ name:'د. مازن سليمان صافي', title:'رئيس قسم الأدوية المخدرة والمراقبة — مجمع ناصر الطبي', bio:'رئيس قسم الأدوية المخدرة والمراقبة بمجمع ناصر الطبي، نائب مدير الصيدلية. متخصص في الإعلام الطبي وكاتب محتوى احترافي دولي.', email:'mazen@nasermedical.edu', phone:'+970-8-2822-2222', image:'/Mazen_Suleiman_Safi.jpg', expertise:['الأمراض المخدرة','إدارة الصيدلية','الإعلام الطبي','القيادة والتدريب'] }},
     ],
     news:[
       {title:'فتح باب استقبال الأبحاث',date:'١ مايو ٢٠٢٦',icon:'📋',content:'نعلمكم أنه تم فتح باب استقبال الأبحاث العلمية ابتداءً من 1/5/2026 وحتى 30/9/2026.'},
@@ -236,17 +239,13 @@ function PresidentQuoteSlide({ t, isRtl }) {
 }
 
 /* ══════════════════════════════════════════
-   MAIN COMPONENT
+    MAIN COMPONENT
 ══════════════════════════════════════════ */
 export default function Home() {
-  /* ── lang from context (Navbar يتحكم فيه) ── */
   const { lang } = useLang();
-
-  /* ── derived translation object ── */
   const t     = useMemo(() => TRANSLATIONS[lang] ?? TRANSLATIONS.ar, [lang]);
   const isRtl = lang === 'ar';
 
-  /* ── state ── */
   const [modal,            setModal]            = useState(null);
   const [counts,           setCounts]           = useState({ speakers:0, sessions:0, attendees:0, countries:0 });
   const [visible,          setVisible]          = useState({});
@@ -268,7 +267,6 @@ export default function Home() {
       .catch(() => {});
   }, []);
   
-  // جلب الأخبار من API
   useEffect(() => {
     fetch('/api/news')
       .then(res => res.json())
@@ -297,12 +295,10 @@ export default function Home() {
   const isMobile = bp === 'mobile';
   const isTablet = bp === 'tablet';
 
-  /* ── sticky top ── */
   const NAV_H      = isMobile ? 64 : isTablet ? 90 : 130;
   const STICKY_TOP = NAV_H + 38 + 8;
   const SLIDE_H    = isMobile ? 220 : isTablet ? 300 : 400;
 
-  /* ── stats counter ── */
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting && !animated.current) {
@@ -325,7 +321,6 @@ export default function Home() {
     return () => obs.disconnect();
   }, []);
 
-  /* ── reveal on lang change ── */
   useEffect(() => {
     animated.current = false;
     setVisible({});
@@ -344,13 +339,11 @@ export default function Home() {
     return () => clearTimeout(tm);
   }, [lang]);
 
-  /* ── autoplay slider ── */
   useEffect(() => {
     autoPlay.current = setInterval(() => setActiveSlide(p => (p + 1) % mediaItems.length), 5000);
     return () => clearInterval(autoPlay.current);
   }, [mediaItems.length]);
 
-  /* ── helpers ── */
   const goTo = (idx) => {
     setActiveSlide((idx + mediaItems.length) % mediaItems.length);
     clearInterval(autoPlay.current);
@@ -374,19 +367,15 @@ export default function Home() {
   const slideTranslate = `translateX(calc(${isRtl ? '+' : '-'}${activeSlide * 100}% + ${isRtl ? -dragDelta : dragDelta}px))`;
 
   const statVals = [
-    counts.speakers  === TARGETS.speakers  ? `${TARGETS.speakers}+`  : String(counts.speakers),
-    counts.sessions  === TARGETS.sessions  ? `${TARGETS.sessions}+`  : String(counts.sessions),
-    counts.attendees === TARGETS.attendees ? '1K+'                   : String(counts.attendees),
+    counts.speakers   === TARGETS.speakers   ? `${TARGETS.speakers}+`  : String(counts.speakers),
+    counts.sessions   === TARGETS.sessions   ? `${TARGETS.sessions}+`  : String(counts.sessions),
+    counts.attendees === TARGETS.attendees ? '1K+'                    : String(counts.attendees),
     counts.countries === TARGETS.countries ? `${TARGETS.countries}+` : String(counts.countries),
   ];
 
-  /* ════════════════════════════
-     SUB-COMPONENTS
-  ════════════════════════════ */
-
-  /* ── SidebarRight ── */
+  /* ─── SidebarRight useMemo ─── */
   const SidebarRight = useMemo(() => () => (
-    <>
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
       {/* LOGO / CTA CARD */}
       <div style={{ background:`linear-gradient(160deg,#FAFBFD,#F2F6FB,#EBF0F8)`, borderRadius:18, overflow:'hidden', boxShadow:`0 4px 24px rgba(27,54,93,0.1),0 0 0 1px ${G}35`, border:`1px solid ${G}30`, position:'relative' }}>
         <div style={{ height:5, background:`linear-gradient(90deg,${R},${G},${R})`, backgroundSize:'200% 100%', animation:'shimmer-border 2.5s linear infinite' }}/>
@@ -459,466 +448,212 @@ export default function Home() {
           </button>
         ))}
       </div>
-    </>
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [t, isRtl, isMobile, hoveredLeader, hoveredCommittee]);
+    </div>
+  ), [t, isRtl, hoveredLeader, hoveredCommittee, isMobile, isTablet]);
 
-  /* ── SidebarLeft ── */
-  const SidebarLeft = useMemo(() => () => (
-    <>
-      <PresidentQuoteSlide t={t} isRtl={isRtl} />
-
-      {/* NEWS - جلب من API */}
-      <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${B}12`, overflow:'hidden', boxShadow:'0 3px 14px rgba(27,54,93,0.07)' }}>
-        <div style={{ padding:'12px 16px', background:`linear-gradient(135deg,${B}06,${R}05)`, borderBottom:`1px solid ${B}0c`, display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:30, height:30, borderRadius:9, background:R, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>📰</div>
-          <span style={{ fontSize:14, fontWeight:900, color:B }}>{t.newsTitle}</span>
-          <div style={{ marginLeft:'auto', width:8, height:8, borderRadius:'50%', background:'#22c55e', animation:'pulse-dot 1.2s ease-in-out infinite' }}/>
-        </div>
-        
-        {newsLoading ? (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
-            <div style={{ fontSize: 12 }}>⏳ جاري تحميل الأخبار...</div>
-          </div>
-        ) : newsItems.length === 0 ? (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>
-            <div style={{ fontSize: 24, marginBottom: 8 }}>📭</div>
-            <div style={{ fontSize: 12 }}>لا توجد أخبار حالياً</div>
-          </div>
-        ) : (
-          newsItems.map((n, i) => (
-            <div key={n.id}
-              onClick={() => setModal({ type:'news', data:n })}
-              onMouseEnter={() => setHoveredNews(i)}
-              onMouseLeave={() => setHoveredNews(null)}
-              style={{ padding:'14px 16px', borderBottom: i < newsItems.length - 1 ? `1px solid ${B}08` : 'none', cursor:'pointer', background: hoveredNews === i ? `${[R,G,B][i % 3]}07` : '#fff', [isRtl ? 'borderRight' : 'borderLeft']:`3px solid ${[R,G,B][i % 3]}`, transition:'background 0.25s, transform 0.22s', transform: hoveredNews === i ? (isRtl ? 'translateX(-4px)' : 'translateX(4px)') : 'translateX(0)' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
-                <div style={{ width:28, height:28, borderRadius:7, background:`${[R,G,B][i % 3]}12`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, transition:'transform 0.25s', transform: hoveredNews === i ? 'scale(1.15) rotate(-5deg)' : 'scale(1)' }}>{n.icon || '📰'}</div>
-                <span style={{ fontSize:11, fontWeight:700, color:'#94a3b8' }}>{n.date}</span>
-              </div>
-              <div style={{ fontSize:13.5, fontWeight:800, color:B, lineHeight:1.5 }}>{n.title}</div>
-              <div style={{ fontSize:12, color:'#94a3b8', marginTop:3, lineHeight:1.5, overflow:'hidden', textOverflow:'ellipsis', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{n.content}</div>
-            </div>
-          ))
-        )}
+  return (
+    <div style={{ direction: isRtl ? 'rtl' : 'ltr', minHeight:'100vh', paddingBottom:60, position:'relative', zIndex:1, fontFamily:"'Cairo',sans-serif" }}>
+      <ParticlesBackground />
+      
+      {/* HERO SECTION */}
+      <div style={{ padding:'40px 20px', maxWidth:1200, margin:'0 auto', textAlign:'center', ...rev('hero', 0.1) }}>
+        <h1 style={{ fontSize: isMobile ? 24 : 36, fontWeight:900, color:B, marginBottom:10 }}>{t.conferenceTitle}</h1>
+        <p style={{ fontSize: isMobile ? 14 : 18, color:'#475569', maxWidth:800, margin:'0 auto 30px', lineHeight:1.6 }}>{t.conferenceSub}</p>
       </div>
 
-      {/* QUICK LINKS */}
-      <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${B}12`, overflow:'hidden', boxShadow:'0 3px 14px rgba(27,54,93,0.07)' }}>
-        <div style={{ padding:'12px 16px', background:`linear-gradient(135deg,${B}06,${G}06)`, borderBottom:`1px solid ${B}0c`, display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{ fontSize:17 }}>🔗</span>
-          <span style={{ fontSize:14, fontWeight:900, color:B }}>{t.quickLinks}</span>
-        </div>
-        {t.quickLinksItems.map((link, i) => (
-          <Link key={i} href={link.href}
-            onMouseEnter={() => setHoveredLink(i)}
-            onMouseLeave={() => setHoveredLink(null)}
-            style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom: i < 3 ? `1px solid ${B}07` : 'none', textDecoration:'none', background: hoveredLink === i ? `${B}05` : '#fff', color:B, transition:'background 0.22s, transform 0.22s', transform: hoveredLink === i ? (isRtl ? 'translateX(-4px)' : 'translateX(4px)') : 'translateX(0)' }}>
-            <div style={{ width:34, height:34, borderRadius:9, background: hoveredLink === i ? `${G}20` : `${B}08`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, flexShrink:0, transition:'background 0.22s, transform 0.25s', transform: hoveredLink === i ? 'rotate(-8deg) scale(1.1)' : '' }}>{link.icon}</div>
-            <span style={{ fontSize:13, fontWeight:700 }}>{link.label}</span>
-            <span style={{ marginLeft:'auto', fontSize:13, color: hoveredLink === i ? G : '#cbd5e1', transition:'color 0.2s' }}>{isRtl ? '‹' : '›'}</span>
-          </Link>
+      {/* STATS SECTION */}
+      <div ref={statsRef} style={{ padding:'20px', maxWidth:1200, margin:'0 auto 40px', display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap:16, ...rev('stats', 0.2) }}>
+        {t.statsLbls.map((lbl, i) => (
+          <div key={i}
+            onMouseEnter={() => setHoveredStat(i)}
+            onMouseLeave={() => setHoveredStat(null)}
+            style={{ background:'#fff', padding:20, borderRadius:12, border:`1px solid ${G}20`, boxShadow:'0 4px 12px rgba(0,0,0,0.03)', textAlign:'center', transition:'all 0.3s', transform: hoveredStat === i ? 'translateY(-4px)' : 'none' }}>
+            <div style={{ fontSize:30, marginBottom:8 }}>{STAT_ICONS[i]}</div>
+            <div style={{ fontSize:24, fontWeight:900, color:STAT_COLORS[i] }}>{statVals[i]}</div>
+            <div style={{ fontSize:12, color:'#64748b', marginTop:4 }}>{lbl}</div>
+          </div>
         ))}
       </div>
-    </>
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [t, isRtl, newsItems, newsLoading, hoveredNews, hoveredLink]);
 
-  /* ════════════════════════════
-     JSX
-  ════════════════════════════ */
-  return (
-    <div style={{ direction: t.dir, fontFamily:"'Cairo',sans-serif", background:'#F0F4F9', minHeight:'100vh', position:'relative' }}>
-      <ParticlesBackground />
+      {/* MAIN LAYOUT */}
+      <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 20px', display:'grid', gridTemplateColumns: isMobile || isTablet ? '1fr' : '2fr 1fr', gap:24 }}>
+        
+        {/* LEFT COLUMN: MAIN CONTENT */}
+        <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+          
+          {/* PRESIDENT MESSAGE */}
+          <PresidentQuoteSlide t={t} isRtl={isRtl} />
 
-      <style suppressHydrationWarning>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&display=swap');
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-        .ecg-line{stroke-dasharray:1400;stroke-dashoffset:1400;animation:ecg 3.5s linear infinite;}
-        @keyframes ecg{to{stroke-dashoffset:0;}}
-        @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.7)}}
-        @keyframes fade-in{from{opacity:0}to{opacity:1}}
-        @keyframes slide-up{from{opacity:0;transform:translateY(28px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-        @keyframes progress-bar{from{width:0%}to{width:100%}}
-        @keyframes float-avatar{0%,100%{transform:translateY(0px);}50%{transform:translateY(-6px);}}
-        @keyframes shimmer-border{0%{background-position:200% center;}100%{background-position:-200% center;}}
-        @keyframes glow-gold{0%,100%{box-shadow:0 0 8px 2px rgba(212,175,55,0.25);}50%{box-shadow:0 0 22px 6px rgba(212,175,55,0.55),0 0 40px 10px rgba(212,175,55,0.18);}}
-        @keyframes shimmer-card{0%{background-position:-200% center;}100%{background-position:200% center;}}
-        @keyframes slide-in-right{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
-        @keyframes slide-in-left{from{opacity:0;transform:translateX(-40px);}to{opacity:1;transform:translateX(0);}}
-        @keyframes scale-in{from{opacity:0;transform:scale(0.88);}to{opacity:1;transform:scale(1);}}
-        @keyframes hero-fade{from{opacity:0;transform:scale(1.03);}to{opacity:1;transform:scale(1);}}
-        @keyframes slide-caption{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
-
-        .stat-card{transition:transform 0.28s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.28s!important;}
-        .stat-card:hover{transform:translateY(-8px) scale(1.04)!important;box-shadow:0 16px 40px rgba(27,54,93,0.14)!important;}
-
-        .slide-track{display:flex;transition:transform 0.5s cubic-bezier(0.25,0.8,0.25,1);will-change:transform;}
-        .slide-track.drag{transition:none!important;}
-
-        .slider-arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(27,54,93,0.45);backdrop-filter:blur(6px);border:1px solid rgba(212,175,55,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;z-index:10;transition:all .22s;}
-        .slider-arrow:hover{background:rgba(200,16,46,0.75)!important;transform:translateY(-50%) scale(1.12)!important;border-color:rgba(212,175,55,0.7)!important;}
-
-        .thumb-item{cursor:pointer;transition:all .22s;opacity:.5;border:2px solid transparent;border-radius:8px;overflow:hidden;flex-shrink:0;width:80px;height:52px;background:#dde3ec;position:relative;}
-        .thumb-item:hover{opacity:.8;transform:scale(1.07);}
-        .thumb-item.active{opacity:1;border-color:#D4AF37;box-shadow:0 0 8px #D4AF3755;}
-
-        .modal-box{animation:scale-in .3s cubic-bezier(.34,1.56,.64,1);}
-        .gold-glow-card{animation:glow-gold 3s ease-in-out infinite;}
-
-        /* ── Layout ── */
-        .main-layout{display:flex;align-items:flex-start;gap:22px;}
-        .sidebar-r,.sidebar-l{display:flex;flex-direction:column;gap:16px;width:300px;flex-shrink:0;}
-
-        @media(max-width:1099px){
-          .main-layout{
-            flex-direction:column !important;
-            gap:16px;
-            width:100% !important;
-            max-width:100% !important;
-            align-items:stretch !important;
-          }
-          .sidebar-r,.sidebar-l{
-            width:100% !important;
-            max-width:100% !important;
-            position:static !important;
-            border-radius:0 !important;
-          }
-        }
-        @media(max-width:639px){
-          .stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important;}
-          .thumb-item{width:60px!important;height:42px!important;}
-          .slider-arrow{width:36px!important;height:36px!important;font-size:18px!important;}
-        }
-      `}</style>
-
-      {/* ECG BAR */}
-      <div style={{ height:38, background:`linear-gradient(90deg,#EBF0F7,#F0F4F9,#EBF0F7)`, overflow:'hidden', position:'relative', borderBottom:`1px solid ${G}30`, zIndex:2 }}>
-        <svg width="100%" height="38" viewBox="0 0 1200 38" preserveAspectRatio="none" style={{ position:'absolute', top:0 }}>
-          <path className="ecg-line" d="M0 19 L70 19 L86 4 L102 34 L118 19 L230 19 L246 2 L266 36 L282 19 L460 19 L476 4 L492 34 L508 19 L660 19 L676 2 L696 36 L712 19 L860 19 L876 4 L892 34 L908 19 L1200 19" fill="none" stroke={B} strokeWidth="1.8" vectorEffect="non-scaling-stroke" opacity="0.25"/>
-          <path className="ecg-line" d="M0 19 L70 19 L86 4 L102 34 L118 19 L230 19 L246 2 L266 36 L282 19 L460 19 L476 4 L492 34 L508 19 L660 19 L676 2 L696 36 L712 19 L860 19 L876 4 L892 34 L908 19 L1200 19" fill="none" stroke={R} strokeWidth="1.4" vectorEffect="non-scaling-stroke" opacity="0.35" style={{ animationDelay:'0.4s' }}/>
-        </svg>
-        <div style={{ position:'absolute', right:16, top:'50%', transform:'translateY(-50%)', display:'flex', alignItems:'center', gap:6, direction:'ltr' }}>
-          <div style={{ width:7, height:7, borderRadius:'50%', background:'#22c55e', animation:'pulse-dot 1s ease-in-out infinite' }}/>
-          <span style={{ fontSize:10, fontWeight:700, color:'#64748b' }}>LIVE</span>
-        </div>
-      </div>
-
-      {/* ══ MAIN LAYOUT ══ */}
-      <div className="main-layout" style={{ 
-        maxWidth: isMobile || isTablet ? '100%' : 1560, 
-        margin: '0 auto', 
-        padding: isMobile ? '14px 12px 0' : isTablet ? '16px 14px 0' : '22px 18px 0', 
-        position: 'relative', 
-        zIndex: 1,
-        width: '100%',
-        boxSizing: 'border-box',
-      }}>
-        {/* RIGHT SIDEBAR */}
-        {!isMobile && !isTablet && (
-          <aside className="sidebar-r gold-glow-card" style={{
-            position: 'sticky', top: STICKY_TOP,
-            borderRadius: 18,
-            animation: 'slide-in-right 0.7s cubic-bezier(0.22,1,0.36,1) both',
-          }}>
-            <SidebarRight />
-          </aside>
-        )}
-
-        {/* CENTER */}
-        <div style={{ flex:1, minWidth:0 }}>
-
-          {/* HERO */}
-          {(isMobile || isTablet) && (
-            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
-              <SidebarRight />
-            </div>
-          )}
-          <div style={{ ...rev('hero', 0), borderRadius: isMobile ? 14 : 22, overflow:'hidden', marginBottom: isMobile ? 14 : 22, boxShadow:`0 0 0 3px ${G}50,0 12px 40px rgba(27,54,93,0.15)`, position:'relative', animation: visible['hero'] ? 'hero-fade 1s cubic-bezier(0.22,1,0.36,1) both' : 'none' }}>
-            <img src="/hero-banner.png" alt={isRtl ? 'شعار المؤتمر' : 'Conference Banner'}
-              style={{ width:'100%', display:'block', objectFit:'cover', objectPosition:'center top', minHeight: isMobile ? 180 : 260, maxHeight: isMobile ? 220 : isTablet ? 300 : 360 }}
-              onError={e => {
-                e.currentTarget.style.display = 'none';
-                const p = e.currentTarget.parentElement;
-                p.style.cssText += `background:linear-gradient(135deg,${G}18,#EBF0F8);min-height:${isMobile ? 180 : 280}px;display:flex;align-items:center;justify-content:center;`;
-                const d = document.createElement('div');
-                d.style.cssText = 'text-align:center;padding:40px;';
-                d.innerHTML = `<div style="font-size:60px;margin-bottom:14px">🏥</div><div style="font-size:17px;font-weight:900;color:${B}">${t.conferenceTitle}</div>`;
-                p.appendChild(d);
-              }}/>
-            <div style={{ position:'absolute', top:0, left:0, right:0, height:5, background:`linear-gradient(90deg,${R},${G},${R})`, backgroundSize:'200% 100%', animation:'shimmer-border 2.5s linear infinite' }}/>
-          </div>
-
-          {/* STATS */}
-          <div ref={statsRef} data-reveal="stats" className="stats-grid"
-            style={{ ...rev('stats', 0.05), display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap: isMobile ? 10 : 14, marginBottom: isMobile ? 14 : 22 }}>
-            {STAT_ICONS.map((ico, i) => (
-              <div key={i} className="stat-card"
-                onMouseEnter={() => setHoveredStat(i)}
-                onMouseLeave={() => setHoveredStat(null)}
-                style={{ background:'#fff', borderRadius: isMobile ? 12 : 16, padding: isMobile ? '14px 10px' : '22px 16px', border:`1px solid ${STAT_COLORS[i]}18`, boxShadow: hoveredStat === i ? `0 12px 32px ${STAT_COLORS[i]}30,0 0 0 2px ${STAT_COLORS[i]}25` : `0 3px 14px rgba(27,54,93,0.06)`, position:'relative', overflow:'hidden', textAlign:'center' }}>
-                <div style={{ position:'absolute', top:0, left:0, right:0, height:4, background:`linear-gradient(90deg,${STAT_COLORS[i]},${STAT_COLORS[i]}55)`, backgroundSize:'200% 100%', animation: hoveredStat === i ? 'shimmer-border 1.5s linear infinite' : 'none' }}/>
-                <div style={{ position:'absolute', inset:0, background:'linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.5) 50%,transparent 60%)', backgroundSize:'200% 100%', animation: hoveredStat === i ? 'shimmer-card 0.8s ease' : 'none', pointerEvents:'none' }}/>
-                <div style={{ fontSize: isMobile ? 24 : 32, marginBottom:6, display:'inline-block', transition:'transform 0.3s', transform: hoveredStat === i ? 'scale(1.2) rotate(-8deg)' : 'scale(1)' }}>{ico}</div>
-                <div style={{ fontSize: isMobile ? 26 : 36, fontWeight:900, color:STAT_COLORS[i], lineHeight:1, marginBottom:6, direction:'ltr', letterSpacing:'-1px' }}>{statVals[i]}</div>
-                <div style={{ fontSize: isMobile ? 10 : 12, color:'#64748b', fontWeight:700, lineHeight:1.4 }}>{t.statsLbls[i]}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* GALLERY */}
-          <div data-reveal="gallery" style={{ ...rev('gallery', 0.05), background:'#fff', borderRadius: isMobile ? 14 : 22, overflow:'hidden', marginBottom: isMobile ? 14 : 32, boxShadow:'0 4px 24px rgba(27,54,93,0.09)', border:`1px solid ${G}30` }}>
-            {/* Header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding: isMobile ? '10px 14px' : '14px 20px', borderBottom:`1px solid ${B}0c`, background:'#FAFBFD', flexWrap:'wrap', gap:8 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <div style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius:10, background:`${G}15`, border:`1px solid ${G}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize: isMobile ? 16 : 18 }}>🎞️</div>
-                <div>
-                  <div style={{ fontSize: isMobile ? 13 : 15, fontWeight:900, color:B }}>{t.galleryTitle}</div>
-                  {!isMobile && <div style={{ fontSize:11, color:'#94a3b8', marginTop:2 }}>{t.gallerySub}</div>}
-                </div>
-              </div>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <button onClick={() => setVideoOpen(true)}
-                  style={{ display:'flex', alignItems:'center', gap:5, padding: isMobile ? '5px 12px' : '7px 16px', background:`linear-gradient(135deg,${R},#a80d24)`, border:'none', borderRadius:20, cursor:'pointer', fontFamily:"'Cairo',sans-serif", fontSize: isMobile ? 11 : 12.5, fontWeight:800, color:'#fff', transition:'transform 0.2s, box-shadow 0.2s' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.06)'; e.currentTarget.style.boxShadow = `0 6px 18px ${R}50`; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
-                  ▶ {t.videoLabel}
-                </button>
-                <div style={{ fontSize:11, fontWeight:700, color:'#9A7A10', background:`${G}15`, border:`1px solid ${G}30`, padding:'4px 12px', borderRadius:20, direction:'ltr' }}>{activeSlide + 1}/{mediaItems.length}</div>
-              </div>
-            </div>
-
-            {/* Slider */}
-            <div ref={sliderRef} style={{ position:'relative', overflow:'hidden', userSelect:'none' }}
-              onMouseDown={e => onDragStart(e.clientX)} onMouseMove={e => onDragMove(e.clientX)} onMouseUp={onDragEnd} onMouseLeave={onDragEnd}
-              onTouchStart={e => onDragStart(e.touches[0].clientX)} onTouchMove={e => { e.preventDefault(); onDragMove(e.touches[0].clientX); }} onTouchEnd={onDragEnd}>
-
-              <div className={`slide-track${isDragging ? ' drag' : ''}`} style={{ transform: slideTranslate }}>
-                {mediaItems.map((item, i) => {
-                  const meta = t.mediaCaptions[i] || { caption:'', tag:'' };
-                  return (
-                    <div key={i} style={{ minWidth:'100%', height:SLIDE_H, position:'relative', flexShrink:0, background:`linear-gradient(135deg,${G}12,#EBF0F8)` }}>
-                      <img src={proxyImg(item.src)} alt={meta.caption} draggable={false}
-                        style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }}
-                        onError={e => {
-                          e.currentTarget.style.display = 'none';
-                          const p = e.currentTarget.parentElement;
-                          const d = document.createElement('div');
-                          d.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
-                          d.innerHTML = `<span style="font-size:48px">🏥</span><span style="color:${B};font-size:15px;font-weight:700;">${meta.caption}</span>`;
-                          p.appendChild(d);
-                        }}/>
-                      <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom,transparent 50%,rgba(27,54,93,0.6))', pointerEvents:'none' }}/>
-                      <div style={{ position:'absolute', top:12, [isRtl ? 'right' : 'left']:12, background:G, color:B, fontSize:11, fontWeight:900, padding:'4px 12px', borderRadius:30 }}>{meta.tag}</div>
-                      <div style={{ position:'absolute', bottom:0, left:0, right:0, padding: isMobile ? '20px 16px 12px' : '32px 26px 18px', pointerEvents:'none', animation: i === activeSlide ? 'slide-caption 0.55s cubic-bezier(0.22,1,0.36,1) both' : 'none' }}>
-                        <div style={{ fontSize: isMobile ? 13 : 16, fontWeight:800, color:'#fff', textShadow:'0 2px 8px rgba(0,0,0,0.4)' }}>{meta.caption}</div>
-                        <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:6 }}>
-                          {mediaItems.map((_, di) => (
-                            <div key={di} style={{ width: di === i ? 18 : 6, height:6, borderRadius:4, background: di === i ? G : 'rgba(255,255,255,0.4)', transition:'all .35s' }}/>
-                          ))}
-                        </div>
-                      </div>
+          {/* MEDIA GALLERY */}
+          <div style={{ background:'#fff', p:20, borderRadius:16, border:`1px solid ${G}20`, padding:20, boxShadow:'0 4px 12px rgba(0,0,0,0.03)', ...rev('gallery', 0.3) }}>
+            <h2 style={{ fontSize:18, fontWeight:900, color:B, marginBottom:4 }}>{t.galleryTitle}</h2>
+            <p style={{ fontSize:12, color:'#64748b', marginBottom:16 }}>{t.gallerySub}</p>
+            
+            {/* SLIDER CONTAINER */}
+            <div ref={sliderRef}
+              onTouchStart={e => onDragStart(e.touches[0].clientX)}
+              onTouchMove={e => onDragMove(e.touches[0].clientX)}
+              onTouchEnd={onDragEnd}
+              onMouseDown={e => onDragStart(e.clientX)}
+              onMouseMove={e => onDragMove(e.clientX)}
+              onMouseUp={onDragEnd}
+              onMouseLeave={onDragEnd}
+              style={{ height: SLIDE_H, borderRadius:12, overflow:'hidden', position:'relative', cursor: isDragging ? 'grabbing' : 'grab', userSelect:'none' }}>
+              
+              <div style={{ display:'flex', width:'100%', height:'100%', transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)', transform: slideTranslate }}>
+                {mediaItems.map((item, idx) => (
+                  <div key={idx} style={{ minWidth:'100%', width:'100%', height:'100%', position:'relative' }}>
+                    <img src={proxyImg(item.src)} alt={isRtl ? item.captionAr : item.captionEn} style={{ width:'100%', height:'100%', objectFit:'cover', pointerEvents:'none' }} />
+                    <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'linear-gradient(transparent, rgba(0,0,0,0.85))', padding:'40px 16px 16px', color:'#fff' }}>
+                      <span style={{ background:R, fontSize:10, padding:'2px 8px', borderRadius:4, fontWeight:700 }}>{isRtl ? item.tag : item.tagEn}</span>
+                      <h3 style={{ fontSize:14, fontWeight:700, marginTop:6 }}>{isRtl ? item.captionAr : item.captionEn}</h3>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
 
-              {[{ s:'left', d: isRtl ? +1 : -1, c:'‹' }, { s:'right', d: isRtl ? -1 : +1, c:'›' }].map(btn => (
-                <button key={btn.s} className="slider-arrow" onClick={() => goTo(activeSlide + btn.d)}
-                  style={{ [btn.s]: isMobile ? 8 : 16, width: isMobile ? 36 : 48, height: isMobile ? 36 : 48, fontSize: isMobile ? 20 : 24 }}>{btn.c}</button>
+              {/* SLIDER NAVIGATION ARROWS */}
+              <button onClick={() => goTo(activeSlide - 1)} style={{ position:'absolute', top:'50%', [isRtl ? 'right' : 'left']:12, transform:'translateY(-50%)', width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.85)', border:'none', cursor:'pointer', fontWeight:900, color:B }}>{isRtl ? '›' : '‹'}</button>
+              <button onClick={() => goTo(activeSlide + 1)} style={{ position:'absolute', top:'50%', [isRtl ? 'left' : 'right']:12, transform:'translateY(-50%)', width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.85)', border:'none', cursor:'pointer', fontWeight:900, color:B }}>{isRtl ? '‹' : '›'}</button>
+            </div>
+
+            {/* SLIDER DOTS */}
+            <div style={{ display:'flex', justifyContent:'center', gap:6, marginTop:12 }}>
+              {mediaItems.map((_, idx) => (
+                <button key={idx} onClick={() => goTo(idx)} style={{ width: idx === activeSlide ? 20 : 8, height:8, borderRadius:4, background: idx === activeSlide ? G : '#cbd5e1', border:'none', transition:'all 0.3s', cursor:'pointer' }} />
               ))}
-
-              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:4, background:`${B}15`, zIndex:5 }}>
-                <div key={activeSlide} style={{ height:'100%', background:`linear-gradient(90deg,${G},${R})`, animation:'progress-bar 5s linear' }}/>
-              </div>
             </div>
+          </div>
 
-            {/* Thumbnails */}
-            {!isMobile && (
-              <div style={{ display:'flex', gap:8, padding:'12px 16px', overflowX:'auto', background:'#F4F6FA', scrollbarWidth:'none', borderTop:`1px solid ${B}08` }}>
-                {mediaItems.map((item, i) => {
-                  const meta = t.mediaCaptions[i] || {};
-                  return (
-                    <div key={i} className={`thumb-item${i === activeSlide ? ' active' : ''}`} onClick={() => goTo(i)}>
-                      <img src={proxyImg(item.src)} alt={meta.caption || ''} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }} onError={e => { e.currentTarget.style.display = 'none'; }}/>
-                      {i === activeSlide && <div style={{ position:'absolute', bottom:0, left:0, right:0, height:3, background:G }}/>}
+          {/* NEWS SECTION */}
+          <div style={{ background:'#fff', padding:20, borderRadius:16, border:`1px solid ${G}20`, boxShadow:'0 4px 12px rgba(0,0,0,0.03)' }}>
+            <h2 style={{ fontSize:18, fontWeight:900, color:B, marginBottom:16 }}>{t.newsTitle}</h2>
+            {newsLoading ? (
+              <div style={{ textAlign:'center', color:'#64748b', padding:'20px 0' }}>⏳ Loading...</div>
+            ) : newsItems.length === 0 ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                {t.news.map((item, i) => (
+                  <div key={i} style={{ display:'flex', gap:14, padding:14, borderRadius:10, border:'1px solid #f1f5f9', background:'#f8fafc' }}>
+                    <div style={{ fontSize:24 }}>{item.icon}</div>
+                    <div>
+                      <h3 style={{ fontSize:14, fontWeight:700, color:B }}>{item.title}</h3>
+                      <p style={{ fontSize:11, color:'#94a3b8', marginTop:2 }}>{item.date}</p>
+                      <p style={{ fontSize:12, color:'#475569', marginTop:6, lineHeight:1.5 }}>{item.content}</p>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                {newsItems.map((item, i) => (
+                  <div key={item.id || i}
+                    onMouseEnter={() => setHoveredNews(i)}
+                    onMouseLeave={() => setHoveredNews(null)}
+                    style={{ display:'flex', gap:14, padding:14, borderRadius:10, border: hoveredNews === i ? `1px solid ${G}60` : '1px solid #f1f5f9', background: hoveredNews === i ? `linear-gradient(135deg,#fff,${G}04)` : '#f8fafc', transition:'all 0.25s' }}>
+                    <div style={{ fontSize:24 }}>{item.icon || '📋'}</div>
+                    <div style={{ flex:1 }}>
+                      <h3 style={{ fontSize:14, fontWeight:700, color:B }}>{isRtl ? item.titleAr : item.titleEn}</h3>
+                      <p style={{ fontSize:11, color:'#94a3b8', marginTop:2 }}>{isRtl ? item.dateAr : item.dateEn}</p>
+                      <p style={{ fontSize:12, color:'#475569', marginTop:6, lineHeight:1.5 }}>{isRtl ? item.contentAr : item.contentEn}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* SidebarLeft on mobile/tablet */}
-          {(isMobile || isTablet) && (
-            <div style={{ display:'flex', flexDirection:'column', gap:16, marginBottom:20 }}>
-              <SidebarLeft />
-            </div>
-          )}
         </div>
 
-        {/* LEFT SIDEBAR — desktop only */}
-        {!isMobile && !isTablet && (
-          <aside className="sidebar-l" style={{ position:'sticky', top: STICKY_TOP, animation:'slide-in-left 0.7s cubic-bezier(0.22,1,0.36,1) both' }}>
-            <SidebarLeft />
-          </aside>
-        )}
+        {/* RIGHT COLUMN: SIDEBAR */}
+        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+          <SidebarRight />
+          
+          {/* QUICK LINKS SECTION */}
+          <div style={{ background:'#fff', borderRadius:16, border:`1px solid ${G}28`, overflow:'hidden', boxShadow:'0 3px 14px rgba(27,54,93,0.07)' }}>
+            <div style={{ padding:'12px 16px', background:`linear-gradient(135deg,${B}06,${G}08)`, borderBottom:`1px solid ${B}0c`, display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontSize:18 }}>🔗</span>
+              <span style={{ fontSize:14, fontWeight:900, color:B }}>{t.quickLinks}</span>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:14 }}>
+              {t.quickLinksItems.map((item, i) => (
+                <Link key={i} href={item.href}
+                  onMouseEnter={() => setHoveredLink(i)}
+                  onMouseLeave={() => setHoveredLink(null)}
+                  style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:12, borderRadius:10, background: hoveredLink === i ? `${G}12` : '#f8fafc', border: hoveredLink === i ? `1px solid ${G}50` : '1px solid #e2e8f0', textDecoration:'none', transition:'all 0.22s' }}>
+                  <span style={{ fontSize:20 }}>{item.icon}</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:B }}>{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      {/* FOOTER */}
-      <footer style={{ padding: isMobile ? '16px 14px' : '22px 36px', borderTop:`1px solid ${G}25`, textAlign:'center', background:'#fff', color:'#94a3b8', fontSize: isMobile ? 11 : 13, fontWeight:600, marginTop:32, position:'relative', zIndex:1 }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, flexWrap:'wrap' }}>
-          <span>{t.footer}</span>
-          <span style={{ color:'#e2e8f0' }}>|</span>
-          <span style={{ direction:'ltr', color:'#cbd5e1', fontSize: isMobile ? 10 : 13 }}>Nasser Medical Complex · Gaza · 4–5 Dec 2026</span>
-        </div>
-      </footer>
-
-      {/* VIDEO LIGHTBOX */}
-      {videoOpen && (
-        <div onClick={() => setVideoOpen(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.88)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, animation:'fade-in .2s', padding: isMobile ? 12 : 20 }}>
-          <div onClick={e => e.stopPropagation()}
-            style={{ position:'relative', width:'100%', maxWidth:900, borderRadius:18, overflow:'hidden', boxShadow:`0 30px 100px rgba(0,0,0,0.5)`, animation:'scale-in 0.35s cubic-bezier(0.34,1.56,0.64,1)' }}>
-            <div style={{ position:'absolute', top:0, left:0, right:0, height:4, background:`linear-gradient(90deg,${R},${G},${R})`, backgroundSize:'200% 100%', animation:'shimmer-border 2s linear infinite', zIndex:10 }}/>
-            <button onClick={() => setVideoOpen(false)}
-              style={{ position:'absolute', top:12, right:12, background:R, border:'none', borderRadius:'50%', width:38, height:38, color:'#fff', fontSize:16, cursor:'pointer', zIndex:10, display:'flex', alignItems:'center', justifyContent:'center', transition:'transform 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'rotate(90deg) scale(1.1)'}
-              onMouseLeave={e => e.currentTarget.style.transform = ''}>✕</button>
-            <video src="/promo-video.mp4" controls autoPlay playsInline poster="/hospital-side.jpg"
-              style={{ width:'100%', display:'block', background:'#000', maxHeight:'80vh' }}
-              onError={e => {
-                e.currentTarget.style.display = 'none';
-                const p = e.currentTarget.parentElement;
-                const d = document.createElement('div');
-                d.style.cssText = `padding:60px;text-align:center;background:#F0F4F9;font-family:'Cairo',sans-serif;`;
-                d.innerHTML = `<div style="font-size:50px;margin-bottom:14px">▶️</div><div style="font-size:16px;font-weight:700;color:${B}">${t.noVideo}</div>`;
-                p.appendChild(d);
-              }}/>
-          </div>
-        </div>
-      )}
-
-      {/* MODALS */}
+      {/* PERSON & COMMITTEE MODAL DETAILED POPUP */}
       {modal && (
-        <div onClick={() => setModal(null)}
-          style={{ position:'fixed', inset:0, background:'rgba(27,54,93,0.65)', display:'flex', alignItems:'flex-start', justifyContent:'center', zIndex:999, backdropFilter:'blur(10px)', animation:'fade-in .2s', overflowY:'auto', padding: isMobile ? '80px 12px 40px' : `${STICKY_TOP + 16}px 20px 40px` }}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}
-            style={{ background:'#fff', borderRadius: isMobile ? 18 : 24, width:'100%', maxWidth: isMobile ? '100%' : 520, position:'relative', boxShadow:`0 28px 70px rgba(27,54,93,0.25),0 0 0 2px ${G}30`, borderTop:`5px solid ${modal.type === 'news' ? R : G}`, maxHeight:'85vh', overflowY:'auto' }}>
-            <button onClick={() => setModal(null)}
-              style={{ position:'absolute', top:14, [isRtl ? 'left' : 'right']:14, background:'#f1f5f9', border:'none', borderRadius:'50%', width:36, height:36, cursor:'pointer', fontSize:15, color:'#64748b', zIndex:10, display:'flex', alignItems:'center', justifyContent:'center', transition:'transform 0.25s, background 0.2s' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'rotate(90deg) scale(1.1)'; e.currentTarget.style.background = `${R}15`; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.background = '#f1f5f9'; }}>✕</button>
+        <div onClick={() => setModal(null)} style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.65)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, zIndex:999, animation:'fade-in 0.25s ease-out' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:20, maxWidth:500, width:'100%', overflow:'hidden', boxShadow:'0 25px 50px -12px rgba(0,0,0,0.25)', border:`1px solid ${G}40`, animation:'scale-up 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            
+            {/* Modal Header Cover */}
+            <div style={{ height:90, background:`linear-gradient(135deg,${B},${B}dd)`, position:'relative', padding:'16px 20px', display:'flex', alignItems:'flex-end' }}>
+              <button onClick={() => setModal(null)} style={{ position:'absolute', top:14, [isRtl ? 'left' : 'right']:14, background:'rgba(255,255,255,0.2)', color:'#fff', border:'none', width:26, height:26, borderRadius:'50%', cursor:'pointer', fontWeight:900, fontSize:12 }}>✕</button>
+              <h3 style={{ color:'#fff', fontSize:16, fontWeight:900 }}>{modal.type === 'person' ? modal.data.role : modal.data.name}</h3>
+            </div>
 
-            {/* Person modal */}
-            {modal.type === 'person' && (() => { const d = modal.data; return (
-              <div style={{ direction: t.dir, overflow:'hidden' }}>
-                <div style={{ display:'flex', alignItems:'flex-start', background:`linear-gradient(135deg,${B},#2a4a7a,#1a3060)`, padding: isMobile ? '24px 18px 20px' : '32px 28px 24px', position:'relative', overflow:'hidden' }}>
-                  <div style={{ position:'absolute', top:-40, left:-40, width:180, height:180, borderRadius:'50%', background:`${G}12`, pointerEvents:'none' }}/>
-                  <div style={{ position:'relative', flexShrink:0, zIndex:2 }}>
-                    <div style={{ width: isMobile ? 100 : 150, height: isMobile ? 100 : 150, borderRadius:16, overflow:'hidden', border:`4px solid ${G}`, boxShadow:`0 8px 32px rgba(0,0,0,0.4),0 0 0 2px ${G}50`, animation:'glow-gold 3s ease-in-out infinite' }}>
-                      <img src={d.image || '/president.png'} alt={d.name} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', animation:'float-avatar 4s ease-in-out infinite' }}
-                        onError={e => { e.currentTarget.src = `https://ui-avatars.com/api/?background=1B365D&color=D4AF37&bold=true&size=300&name=${encodeURIComponent(d.name)}`; }}/>
-                    </div>
-                    <div style={{ position:'absolute', bottom:-8, right:-8, width:30, height:30, borderRadius:'50%', background:R, border:'3px solid #fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'#fff', fontWeight:900 }}>✓</div>
-                  </div>
-                  <div style={{ flex:1, [isRtl ? 'marginRight' : 'marginLeft']: isMobile ? 14 : 20, zIndex:2 }}>
-                    <div style={{ fontSize:10, fontWeight:800, color:G, background:`${G}20`, border:`1px solid ${G}40`, padding:'3px 10px', borderRadius:20, display:'inline-block', marginBottom:8 }}>{d.role}</div>
-                    <div style={{ fontSize: isMobile ? 15 : 20, fontWeight:900, color:'#fff', lineHeight:1.3, marginBottom:6 }}>{d.name}</div>
-                    <div style={{ fontSize: isMobile ? 11 : 12, color:'rgba(255,255,255,0.75)', lineHeight:1.6, marginBottom:10 }}>{d.title}</div>
-                    <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:'rgba(255,255,255,0.8)' }}><span>📧</span><span style={{ direction:'ltr' }}>{d.email}</span></div>
-                      <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:'rgba(255,255,255,0.8)' }}><span>📞</span><span style={{ direction:'ltr' }}>{d.phone}</span></div>
+            {/* Modal Body */}
+            <div style={{ padding:20 }}>
+              {modal.type === 'person' ? (
+                <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+                    <Avatar src={modal.data.image} name={modal.data.name} size={72} border={3} />
+                    <div>
+                      <h4 style={{ fontSize:16, fontWeight:900, color:B }}>{modal.data.name}</h4>
+                      <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>{modal.data.title}</p>
                     </div>
                   </div>
-                </div>
-                <div style={{ padding: isMobile ? '18px 16px' : '24px 28px' }}>
-                  <p style={{ color:'#475569', fontSize: isMobile ? 13 : 14, lineHeight:2, marginBottom:18, background:'#F8FAFC', padding:'14px 16px', borderRadius:12, border:`1px solid ${B}10`, [isRtl ? 'borderRight' : 'borderLeft']:`3px solid ${B}` }}>{d.bio}</p>
-                  <div style={{ background:'linear-gradient(135deg,#fef9ee,#fff8e6)', borderRadius:14, border:`1px solid ${G}35`, padding:'16px 18px' }}>
-                    <div style={{ fontSize:12, fontWeight:900, color:B, marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
-                      <span style={{ width:26, height:26, borderRadius:7, background:G, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:13 }}>🎓</span>
-                      {t.expertiseLbl}
-                    </div>
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-                      {d.expertise.map((exp, i) => (
-                        <span key={i} style={{ background:'#fff', padding:'7px 14px', borderRadius:20, border:`1.5px solid ${G}50`, fontSize:12, fontWeight:700, color:B, transition:'all 0.2s', cursor:'default' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = `${G}15`; e.currentTarget.style.borderColor = G; e.currentTarget.style.transform = 'scale(1.05)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = `${G}50`; e.currentTarget.style.transform = ''; }}>
-                          ✓ {exp}
-                        </span>
+                  <p style={{ fontSize:13, color:'#374151', lineHeight:1.6, background:'#f8fafc', padding:12, borderRadius:10, border:'1px solid #e2e8f0' }}>{modal.data.bio}</p>
+                  <div>
+                    <h5 style={{ fontSize:12, fontWeight:800, color:B, marginBottom:6 }}>{t.expertiseLbl}:</h5>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                      {modal.data.expertise.map((exp, idx) => (
+                        <span key={idx} style={{ fontSize:11, background:`${G}12`, color:'#7a5c1a', border:`1px solid ${G}25`, padding:'3px 10px', borderRadius:20 }}>{exp}</span>
                       ))}
                     </div>
                   </div>
+                  <div style={{ borderTop:'1px solid #f1f5f9', paddingTop:12, display:'flex', flexDirection:'column', gap:4, fontSize:11, color:'#64748b' }}>
+                    <div>📧 {modal.data.email}</div>
+                    <div style={{ direction:'ltr', textAlign: isRtl ? 'right' : 'left' }}>📞 {modal.data.phone}</div>
+                  </div>
                 </div>
-              </div>
-            ); })()}
-
-            {/* Committee modal */}
-            {modal.type === 'committee' && (() => { const c = modal.data; return (
-              <div style={{ direction: t.dir }}>
-                {c.head ? (
-                  <div style={{ overflow:'hidden' }}>
-                    <div style={{ display:'flex', alignItems:'flex-start', background:`linear-gradient(135deg,${B},#2a4a7a)`, padding: isMobile ? '24px 18px 20px' : '32px 28px 24px', position:'relative', overflow:'hidden' }}>
-                      <div style={{ position:'relative', flexShrink:0, zIndex:2 }}>
-                        <div style={{ width: isMobile ? 100 : 150, height: isMobile ? 100 : 150, borderRadius:16, overflow:'hidden', border:`4px solid ${G}`, animation:'glow-gold 3s ease-in-out infinite' }}>
-                          <img src={c.head.image || '/president.png'} alt={c.head.name} style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'top', animation:'float-avatar 4s ease-in-out infinite' }}
-                            onError={e => { e.currentTarget.src = `https://ui-avatars.com/api/?background=1B365D&color=D4AF37&bold=true&size=300&name=${encodeURIComponent(c.head.name)}`; }}/>
-                        </div>
-                        <div style={{ position:'absolute', bottom:-8, right:-8, width:30, height:30, borderRadius:'50%', background:G, border:'3px solid #fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:B, fontWeight:900 }}>✓</div>
-                      </div>
-                      <div style={{ flex:1, [isRtl ? 'marginRight' : 'marginLeft']: isMobile ? 14 : 20, zIndex:2 }}>
-                        <div style={{ fontSize:10, fontWeight:800, color:G, background:`${G}20`, border:`1px solid ${G}40`, padding:'3px 10px', borderRadius:20, display:'inline-block', marginBottom:8 }}>{c.name}</div>
-                        <div style={{ fontSize: isMobile ? 15 : 20, fontWeight:900, color:'#fff', lineHeight:1.3, marginBottom:6 }}>{c.head.name}</div>
-                        <div style={{ fontSize: isMobile ? 11 : 12, color:'rgba(255,255,255,0.75)', lineHeight:1.6, marginBottom:10 }}>{c.head.title}</div>
-                        <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:'rgba(255,255,255,0.8)' }}><span>📧</span><span style={{ direction:'ltr' }}>{c.head.email}</span></div>
-                          <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, color:'rgba(255,255,255,0.8)' }}><span>📞</span><span style={{ direction:'ltr' }}>{c.head.phone}</span></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ padding: isMobile ? '18px 16px' : '24px 28px' }}>
-                      <p style={{ color:'#475569', fontSize: isMobile ? 13 : 14, lineHeight:2, marginBottom:18, background:'#F8FAFC', padding:'14px 16px', borderRadius:12, border:`1px solid ${B}10`, [isRtl ? 'borderRight' : 'borderLeft']:`3px solid ${B}` }}>{c.head.bio}</p>
-                      <div style={{ background:'linear-gradient(135deg,#fef9ee,#fff8e6)', borderRadius:14, border:`1px solid ${G}35`, padding:'16px 18px' }}>
-                        <div style={{ fontSize:12, fontWeight:900, color:B, marginBottom:12 }}>🎓 {t.expertiseLbl}</div>
-                        <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-                          {c.head.expertise.map((exp, i) => (
-                            <span key={i} style={{ background:'#fff', padding:'7px 14px', borderRadius:20, border:`1.5px solid ${G}50`, fontSize:12, fontWeight:700, color:B, transition:'all 0.2s', cursor:'default' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = `${G}15`; e.currentTarget.style.transform = 'scale(1.05)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = ''; }}>
-                              ✓ {exp}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+              ) : (
+                // Committee Modal View
+                <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                    <div style={{ width:48, height:48, borderRadius:12, background:`linear-gradient(135deg,${B}10,${G}15)`, border:`1px solid ${G}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>{modal.data.icon}</div>
+                    <div>
+                      <h4 style={{ fontSize:16, fontWeight:900, color:B }}>{modal.data.name}</h4>
+                      <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>{modal.data.desc}</p>
                     </div>
                   </div>
-                ) : (
-                  <div style={{ padding: isMobile ? '30px 20px' : '40px 30px', textAlign:'center' }}>
-                    <div style={{ width:72, height:72, borderRadius:18, background:`${B}10`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, margin:'0 auto 14px', animation:'float-avatar 3s ease-in-out infinite' }}>{c.icon}</div>
-                    <div style={{ fontSize:20, fontWeight:900, color:B, marginBottom:4 }}>{c.name}</div>
-                    <div style={{ fontSize:12, color:R, background:`${R}0e`, padding:'4px 14px', borderRadius:30, display:'inline-block', marginBottom:14 }}>{t.execCommittee}</div>
-                    <p style={{ color:'#475569', fontSize:14, lineHeight:1.9, background:'#F8FAFC', padding:'14px 16px', borderRadius:12, border:'1px solid #e8edf2', marginBottom:16, textAlign: isRtl ? 'right' : 'left' }}>{c.desc}</p>
-                    <div style={{ background:'#fef9ee', borderRadius:12, border:`1px solid ${G}35`, padding:'14px 16px' }}>
-                      <div style={{ fontSize:13, fontWeight:900, color:B, marginBottom:10 }}>👥 {t.membersLbl}</div>
-                      {c.members.map((m, i) => (
-                        <div key={i} style={{ background:'#fff', padding:'10px 14px', borderRadius:10, [isRtl ? 'borderRight' : 'borderLeft']:`3px solid ${G}`, fontSize:13, fontWeight:700, color:B, border:'1px solid #e8edf2', marginBottom: i < c.members.length - 1 ? 8 : 0 }}>✓ {m}</div>
-                      ))}
+                  
+                  {modal.data.head && (
+                    <div style={{ borderTop:'1px solid #f1f5f9', paddingTop:14 }}>
+                      <h5 style={{ fontSize:12, fontWeight:800, color:G, marginBottom:10 }}>{t.membersLbl}:</h5>
+                      <div style={{ display:'flex', gap:12, background:'#fafbfc', padding:12, borderRadius:12, border:'1px solid #e2e8f0' }}>
+                        <Avatar src={modal.data.head.image} name={modal.data.head.name} size={50} border={2} />
+                        <div>
+                          <h6 style={{ fontSize:13, fontWeight:900, color:B }}>{modal.data.head.name}</h6>
+                          <p style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{modal.data.head.title}</p>
+                          <p style={{ fontSize:11, color:'#475569', marginTop:6, lineHeight:1.5 }}>{modal.data.head.bio}</p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ); })()}
+                  )}
+                </div>
+              )}
+            </div>
 
-            {/* News modal */}
-            {modal.type === 'news' && (
-              <div style={{ padding: isMobile ? '30px 20px' : '40px 30px', textAlign:'center', direction: t.dir }}>
-                <div style={{ fontSize:40, marginBottom:14, display:'inline-flex', alignItems:'center', justifyContent:'center', width:80, height:80, background:`${R}0e`, borderRadius:18, animation:'float-avatar 3s ease-in-out infinite' }}>{modal.data.icon}</div>
-                <div style={{ fontSize: isMobile ? 17 : 21, fontWeight:900, color:B, marginBottom:5 }}>{modal.data.title}</div>
-                <div style={{ fontSize:12, color:'#94a3b8', fontWeight:600, marginBottom:12 }}>{modal.data.date}</div>
-                <div style={{ width:40, height:3, background:`linear-gradient(90deg,${R},${G})`, borderRadius:3, margin:'0 auto 14px', backgroundSize:'200% 100%', animation:'shimmer-border 2s linear infinite' }}/>
-                <div style={{ background:'#F8FAFC', borderRadius:12, padding:'16px 18px', fontSize: isMobile ? 13 : 15, color:'#475569', lineHeight:2, border:'1px solid #e8edf2', textAlign: isRtl ? 'right' : 'left' }}>{modal.data.content}</div>
-              </div>
-            )}
           </div>
         </div>
       )}
