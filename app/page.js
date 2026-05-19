@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic';
 import { useLang } from '@/context/LangContext';
 function proxyImg(url) {
   if (!url) return "";
+  // base64 → استخدمها مباشرة بدون proxy
+  if (url.startsWith("data:")) return url;
   if (url.includes("vercel-storage.com") || url.includes("blob.vercel")) {
     return `/api/gallery/image?url=${encodeURIComponent(url)}`;
   }
