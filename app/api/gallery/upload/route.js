@@ -19,7 +19,7 @@ export async function POST(req) {
     const file = formData.get("file");
 
     if (!file || typeof file === "string") {
-      return NextResponse.json({ error: "لا يوجد ملف مرفوع" }, { status: 400 });
+      return NextResponse.json({ error: "لا يوجد ملف" }, { status: 400 });
     }
 
     const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -29,27 +29,20 @@ export async function POST(req) {
 
     const ext = file.name.split(".").pop() || "jpg";
     const filename = `gallery/${randomUUID()}.${ext}`;
-
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const blob = await put(filename, buffer, {
-      access: "private",          // ✅ يتوافق مع الـ Private Store
+      access: "private",
       contentType: file.type,
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    // نحفظ blob.url (المسار الداخلي) في قاعدة البيانات
-    return NextResponse.json({
-      success: true,
-      url: blob.url,
-    });
+    return NextResponse.json({ success: true, url: blob.url });
 
   } catch (err) {
-    console.error("❌ [gallery/upload سحابي]", err);
-    return NextResponse.json(
-      { error: err.message || "خطأ داخلي" },
-      { status: 500 }
-    );
+    console.error("❌ [upload]", err.message);
+    // ✅ دائماً رجّع JSON حتى في حالة الخطأ
+    return NextResponse.json({ error: err.message || "خطأ داخلي" }, { status: 500 });
   }
 }

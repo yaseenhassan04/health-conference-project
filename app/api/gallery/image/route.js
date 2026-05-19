@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { head } from "@vercel/blob";
 
 export const dynamic = 'force-dynamic';
 
@@ -12,13 +11,24 @@ export async function GET(req) {
   }
 
   try {
-    // ✅ استخدم head() للحصول على معلومات الملف أولاً
-    const { downloadUrl } = await head(blobUrl, {
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    });
+    // ✅ أضف التوكن كـ query parameter — هذي الطريقة الرسمية لـ Vercel private blobs
+    const urlWithToken = `${blobUrl}?token=${process.env.BLOB_READ_WRITE_TOKEN}`;
+    
+    const response = await fetch(urlWithToken);
 
-    // Redirect للـ downloadUrl المؤقت
-    return NextResponse.redirect(downloadUrl);
+    if (!response.ok) {
+      throw new Error(`${response.status} ${response.statusText}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    const contentType = response.headers.get("content-type") || "image/jpeg";
+
+    return new NextResponse(buffer, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
 
   } catch (err) {
     console.error("❌ [image proxy]", err.message);
