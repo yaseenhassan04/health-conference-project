@@ -16,11 +16,21 @@ const STAT_ICONS  = ['🎤','🔬','👥','🌍'];
 const STAT_COLORS = [R, B, '#0e7490', '#047857'];
 const TARGETS     = { speakers:20, sessions:15, attendees:1000, countries:5 };
 const MEDIA_ITEMS_FALLBACK = [
-{ src:'/hospital-side.jpg', captionAr:'مجمع ناصر الطبي',    captionEn:'Nasser Medical Complex', tag:'مستشفى',   tagEn:'Hospital'   },
-{ src:'/gallery/img2.jpg',  captionAr:'حفل الافتتاح',        captionEn:'Opening Ceremony',       tag:'فعاليات',  tagEn:'Events'     },
-{ src:'/gallery/img3.jpg',  captionAr:'ورشة عمل طبية',      captionEn:'Medical Workshop',       tag:'ورش',      tagEn:'Workshops'  },
-{ src:'/gallery/img4.jpg',  captionAr:'المتحدثون الدوليون',  captionEn:"Int'l Speakers",         tag:'متحدثون',  tagEn:'Speakers'   },
-{ src:'/gallery/img5.jpg',  captionAr:'جلسة التحكيم',        captionEn:'Review Session',         tag:'جلسات',    tagEn:'Sessions'   },
+  { src: '/img1.jpeg', captionAr: 'حفل افتتاح المؤتمر العلمي', captionEn: 'Conference Opening Ceremony', tag: 'فعاليات', tagEn: 'Events' },
+  { src: '/img2.jpeg', captionAr: 'جانب من الحضور الكريم', captionEn: 'A Side of Attendees', tag: 'فعاليات', tagEn: 'Events' },
+  { src: '/img3.jpeg', captionAr: 'ورشة العمل الطبية الأولى', captionEn: 'First Medical Workshop', tag: 'ورش', tagEn: 'Workshops' },
+  { src: '/img4.jpeg', captionAr: 'جلسة مناقشة الأبحاث الطبية', captionEn: 'Medical Research Discussion', tag: 'جلسات', tagEn: 'Sessions' },
+  { src: '/img5.jpeg', captionAr: 'المتحدثون الرئيسيون في المؤتمر', captionEn: 'Keynote Speakers', tag: 'متحدثون', tagEn: 'Speakers' },
+  { src: '/img6.jpeg', captionAr: 'تكريم اللجان المنظمة', captionEn: 'Honoring Organizers', tag: 'فعاليات', tagEn: 'Events' },
+  { src: '/img7.jpeg', captionAr: 'المعرض الطبي المصاحب', captionEn: 'Accompanying Medical Exhibition', tag: 'أخرى', tagEn: 'Other' },
+  { src: '/img8.jpeg', captionAr: 'جلسة النقاش الثانية', captionEn: 'Second Discussion Session', tag: 'جلسات', tagEn: 'Sessions' },
+  { src: '/img9.jpeg', captionAr: 'ورشة عمل طب الباطنة', captionEn: 'Internal Medicine Workshop', tag: 'ورش', tagEn: 'Workshops' },
+  { src: '/img10.jpeg', captionAr: 'استراحة المشاركين', captionEn: 'Participants Break', tag: 'أخرى', tagEn: 'Other' },
+  { src: '/img12.jpeg', captionAr: 'حلقة نقاشية مغلقة', captionEn: 'Closed Panel Discussion', tag: 'جلسات', tagEn: 'Sessions' },
+  { src: '/img13.jpeg', captionAr: 'عرض الأبحاث الملصقة', captionEn: 'Poster Presentations', tag: 'أخرى', tagEn: 'Other' },
+  { src: '/img14.jpeg', captionAr: 'تكريم المتحدثين الدوليين', captionEn: 'Honoring International Speakers', tag: 'متحدثون', tagEn: 'Speakers' },
+  { src: '/img15.jpeg', captionAr: 'الصورة الجماعية الختامية', captionEn: 'Closing Group Photo', tag: 'فعاليات', tagEn: 'Events' },
+  { src: '/img16.jpeg', captionAr: 'مجمع ناصر الطبي', captionEn: 'Nasser Medical Complex', tag: 'مستشفى', tagEn：'Hospital' }
 ];
 
 /* ─── Translations (outside component) ─── */
