@@ -16,7 +16,7 @@ const STAT_ICONS  = ['🎤','🔬','👥','🌍'];
 const STAT_COLORS = [R, B, '#0e7490', '#047857'];
 const TARGETS     = { speakers:20, sessions:15, attendees:1000, countries:5 };
 const MEDIA_ITEMS_FALLBACK = [
-{ src:'/hospital-side.jpg', captionAr:'مجمع ميران الطبي',    captionEn:'Nasser Medical Complex', tag:'مستشفى',   tagEn:'Hospital'   },
+{ src:'/hospital-side.jpg', captionAr:'مجمع ناصر الطبي',    captionEn:'Nasser Medical Complex', tag:'مستشفى',   tagEn:'Hospital'   },
 { src:'/gallery/img2.jpg',  captionAr:'حفل الافتتاح',        captionEn:'Opening Ceremony',       tag:'فعاليات',  tagEn:'Events'     },
 { src:'/gallery/img3.jpg',  captionAr:'ورشة عمل طبية',      captionEn:'Medical Workshop',       tag:'ورش',      tagEn:'Workshops'  },
 { src:'/gallery/img4.jpg',  captionAr:'المتحدثون الدوليون',  captionEn:"Int'l Speakers",         tag:'متحدثون',  tagEn:'Speakers'   },
