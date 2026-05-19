@@ -3,8 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 
 const B = "#1B365D", R = "#C8102E", G = "#D4AF37";
+// استبدل السطر الخامس بهذا السطر وتأكد أن القيمة الاحتياطية تطابق السيرفر تماماً
 const TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025";
-
+function proxyImg(url) {
+  if (!url) return "";
+  // لو الـ URL من Vercel Blob (private)، مرّره عبر الـ proxy
+  if (url.includes("vercel-storage.com") || url.includes("blob.vercel")) {
+    return `/api/gallery/image?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
 function Toast({ msg, ok }) {
   return (
     <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", background:ok?"#10b981":R, color:"#fff", padding:"12px 24px", borderRadius:12, fontSize:14, fontWeight:700, boxShadow:"0 8px 24px rgba(0,0,0,0.15)", zIndex:9999, fontFamily:"'Cairo',sans-serif", whiteSpace:"nowrap", animation:"fadeUp .25s ease" }}>
@@ -176,7 +184,7 @@ function MediaCarouselTab({ showToast }) {
             <div key={item.id} style={{ background:"#fff", borderRadius:14, overflow:"hidden", border:"1px solid #e8edf2", boxShadow:"0 2px 10px rgba(0,0,0,0.05)", position:"relative" }}>
               <div style={{ position:"absolute", top:8, right:8, background:B, color:"#fff", width:24, height:24, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, zIndex:2 }}>{idx+1}</div>
               <div style={{ height:150, overflow:"hidden" }}>
-                <img src={item.src} alt={item.captionAr} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                <img src={proxyImg(item.src)} alt={item.captionAr} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
               </div>
               <div style={{ padding:"10px 12px" }}>
                 <div style={{ fontSize:11, color:G, fontWeight:700, background:`${G}15`, padding:"2px 8px", borderRadius:10, display:"inline-block", marginBottom:4 }}>{item.tag}</div>
@@ -285,7 +293,7 @@ function InteractiveScreensTab({ showToast }) {
   };
 
   const getPreview = (item) => {
-    if (item.type==="image" && item.mediaUrl) return <img src={item.mediaUrl} alt="" style={{ width:60, height:60, objectFit:"cover", borderRadius:8 }} />;
+    if (item.type==="image" && item.mediaUrl) return <img src={proxyImg(item.mediaUrl)} alt="" style={{ width:60, height:60, objectFit:"cover", borderRadius:8 }} />;
     if (item.type==="video") return <div style={{ fontSize:30 }}>🎥</div>;
     if (item.type==="link")  return <div style={{ fontSize:30 }}>{item.icon||"🔗"}</div>;
     return <div style={{ fontSize:30 }}>📝</div>;
@@ -325,7 +333,7 @@ function InteractiveScreensTab({ showToast }) {
                 <label style={{ fontSize:12, fontWeight:700, color:B, display:"block", marginBottom:5 }}>{editItem.type==="image"?"رفع صورة":"رفع فيديو أو رابط"}</label>
                 {editItem.mediaUrl ? (
                   <div>
-                    {editItem.type==="image" ? <img src={editItem.mediaUrl} alt="" style={{ maxHeight:150, borderRadius:8 }} /> : <div style={{ padding:10, background:"#f1f5f9", borderRadius:8 }}>🎥 {editItem.mediaUrl}</div>}
+                    {editItem.type==="image" ? <img src={proxyImg(editItem.mediaUrl)} alt="" style={{ maxHeight:150, borderRadius:8 }} />: <div style={{ padding:10, background:"#f1f5f9", borderRadius:8 }}>🎥 {editItem.mediaUrl}</div>}
                     <button onClick={()=>setEditItem(prev=>({...prev,mediaUrl:""}))} style={{ marginTop:8, padding:"4px 12px", background:R, color:"#fff", border:"none", borderRadius:6, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>تغيير</button>
                   </div>
                 ) : <DropZone onFile={uploadMedia} label={editItem.type==="image"?"اسحب صورة أو اضغط للرفع":"اسحب ملف فيديو"} />}
