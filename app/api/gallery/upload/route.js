@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { put } from '@vercel/blob';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,15 +26,19 @@ export async function POST(req) {
       return NextResponse.json({ error: "نوع الملف غير مدعوم" }, { status: 400 });
     }
 
-    // ✅ Base64 — بدون Blob، تشتغل فوراً بدون proxy
-    const arrayBuffer = await file.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
-    const dataUrl = `data:${file.type};base64,${base64}`;
+    // توليد اسم فريد للملف لمنع التداخل
+    const filename = `${Date.now()}-${file.name}`;
 
-    return NextResponse.json({ success: true, url: dataUrl });
+    // الرفع المباشر إلى Vercel Blob Store الخاص بك
+    const blob = await put(filename, file, {
+      access: 'public', // ليكون الرابط متاحاً للزوار في الموقع
+    });
+
+    // الـ blob.url يحتوي على الرابط المباشر الجديد للصورة
+    return NextResponse.json({ success: true, url: blob.url });
 
   } catch (err) {
-    console.error("❌ [upload]", err.message);
-    return NextResponse.json({ error: err.message || "خطأ داخلي" }, { status: 500 });
+    console.error("❌ [Vercel Blob Upload Error]:", err.message);
+    return NextResponse.json({ error: err.message || "خطأ داخلي أثناء الرفع" }, { status: 500 });
   }
 }
