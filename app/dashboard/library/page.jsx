@@ -281,25 +281,23 @@ export default function LibraryDashboard() {
   };
 
   const handleDelete = async (id) => {
-    try {
-      // 🔥 تعديل 3: إضافة التوكن في حقول الرأس لطلب الـ DELETE لحذف المستند السحابي وقاعدة البيانات
-      const res = await fetch('/api/library', {
-        method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-token': process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'samoud2025'
-        },
-        body: JSON.stringify({ id })
-      });
-      if (!res.ok) throw new Error();
-      setItems(prev => prev.filter(i => i.id !== id));
-      showToast('تم حذف الملف من المكتبة بنجاح');
-    } catch {
-      showToast('فشل الحذف من قاعدة البيانات', false);
-    } finally {
-      setConfirmDel(null);
-    }
-  };
+  try {
+    const res = await fetch(`/api/library?id=${id}`, { // ✅ حط الـ id في URL
+      method: 'DELETE',
+      headers: { 
+        'x-admin-token': process.env.NEXT_PUBLIC_ADMIN_TOKEN || 'samoud2025'
+      },
+      // ❌ احذف الـ body كلياً
+    });
+    if (!res.ok) throw new Error();
+    setItems(prev => prev.filter(i => i.id !== id));
+    showToast('تم حذف الملف من المكتبة بنجاح');
+  } catch {
+    showToast('فشل الحذف من قاعدة البيانات', false);
+  } finally {
+    setConfirmDel(null);
+  }
+};
 
   const filtered = items.filter(i => {
     return !search || i.title.includes(search) || i.author?.includes(search);
