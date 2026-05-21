@@ -267,7 +267,7 @@ export default function LibraryDashboard() {
       }
     })
       .then(r => r.json())
-      .then(d => setItems(d.books || []))
+      .then(d => setItems(d.items || []))
       .catch(() => showToast('فشل تحميل بيانات المكتبة', false))
       .finally(() => setLoading(false));
   }, []);

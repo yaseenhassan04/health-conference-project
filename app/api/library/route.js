@@ -53,31 +53,48 @@ export async function POST(req) {
   }
 
   try {
-    const body = await req.json();
-    const { title, author, category, type, fileUrl, description, year, published } = body;
+    const formData = await req.formData(); // ✅ بدل req.json()
+    const title  = formData.get('title');
+    const author = formData.get('author') || 'اللجنة العلمية';
+    const file   = formData.get('file');
 
     if (!title?.trim()) {
-      return NextResponse.json({ error: 'عنوان المرجع (title) مطلوب' }, { status: 400 });
+      return NextResponse.json({ error: 'العنوان مطلوب' }, { status: 400 });
+    }
+    if (!file) {
+      return NextResponse.json({ error: 'الملف مطلوب' }, { status: 400 });
     }
 
-    // إدخال المرجع ديناميكياً في قاعدة البيانات عبر Prisma
+    // رفع الملف للـ Blob
+    const { put } = await import('@vercel/blob');
+    const bytes      = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(bytes);
+    const filename   = `${Date.now()}-${author.replace(/\s+/g, '-')}.pdf`;
+
+    const blob = await put(`library/${filename}`, fileBuffer, {
+      access: 'public',
+      token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN,
+    });
+
+    // حفظ في قاعدة البيانات
     const newItem = await prisma.library.create({
       data: {
-        title: title.trim(),
-        author: author?.trim() || '',
-        category: category?.trim() || 'General',
-        type: type || 'book',
-        fileUrl: fileUrl?.trim() || '',
-        description: description?.trim() || '',
-        year: year ? parseInt(year) : new Date().getFullYear(),
-        published: published !== false,
+        title:    title.trim(),
+        author:   author.trim(),
+        category: 'General',
+        type:     'book',
+        fileUrl:  blob.url,
+        description: '',
+        year:     new Date().getFullYear(),
+        published: true,
       }
     });
 
-    return NextResponse.json({ success: true, item: newItem }, { status: 201 });
+    return NextResponse.json({ success: true, data: newItem }, { status: 201 });
+
   } catch (err) {
     console.error("❌ [library_create_error]", err);
-    return NextResponse.json({ error: 'بيانات الطلب غير صالحة أو حدث خطأ في الخادم' }, { status: 400 });
+    return NextResponse.json({ error: 'حدث خطأ في الخادم', details: err.message }, { status: 500 });
   }
 }
 
