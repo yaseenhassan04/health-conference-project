@@ -7,6 +7,18 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+model Library {
+  id          Int      @id @default(autoincrement())
+  title       String
+  author      String   @default("")
+  category    String   @default("General")
+  type        String   @default("book")
+  fileUrl     String   @default("")
+  description String   @default("")
+  year        Int      @default(2026)
+  published   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
 model User {
   id         Int        @id @default(autoincrement())
   fullName   String
