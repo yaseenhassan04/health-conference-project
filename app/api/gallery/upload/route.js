@@ -31,8 +31,7 @@ export async function POST(req) {
     // الرفع إلى المخزن العام
     const blob = await put(filename, file, {
       access: 'public',
-      token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN,
-    });
+      token: process.env.BLOB_READ_WRITE_TOKEN || process.env.PUBLIC_BLOB_READ_WRITE_TOKEN,    });
 
     // سحب الرابط السحابي المتولد
     const generatedUrl = blob.url;

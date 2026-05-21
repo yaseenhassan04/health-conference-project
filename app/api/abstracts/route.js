@@ -47,8 +47,9 @@ export async function POST(request) {
 
     // 2️⃣ الرفع السحابي المستقر إلى Vercel Blob (الملف لن يختفي أبداً)
     const blob = await put(`abstracts/${filename}`, fileBuffer, {
-      access: 'public',
-    });
+  access: 'public',
+  token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN,
+});
 
     // 3️⃣ الحفظ في قاعدة البيانات برابط سحابي دائم (blob.url)
     // تنبيه: إذا كان الـ ID في الاسكيما لديك String، تأكد من عدم استخدام parseInt لاحقاً
