@@ -110,25 +110,36 @@ export default function SubmissionReviewPage() {
     }
   };
 
-  const filteredAbstracts = filter === 'all' ? abstracts : abstracts.filter(a => a.status === filter);
+  // تعديل التصفية البرمجية لتشمل الأحرف الكبيرة والصغيرة القادمة من الباك إند
+  const filteredAbstracts = filter === 'all' 
+    ? abstracts 
+    : abstracts.filter(a => a.status?.toLowerCase() === filter.toLowerCase());
+
+  // تعديل حساب العدادات العلوي ليدعم الحالات الكبيرة والصغيرة معاً لتعمل الإحصائيات بشكل سليم
   const stats = {
     total: abstracts.length,
-    pending: abstracts.filter(a => a.status === 'pending').length,
-    accepted: abstracts.filter(a => a.status === 'accepted').length,
-    rejected: abstracts.filter(a => a.status === 'rejected').length,
+    pending: abstracts.filter(a => a.status === 'pending' || a.status === 'PENDING').length,
+    accepted: abstracts.filter(a => a.status === 'accepted' || a.status === 'ACCEPTED').length,
+    rejected: abstracts.filter(a => a.status === 'rejected' || a.status === 'REJECTED').length,
   };
 
   const getStatusBadge = (status) => {
+    const currentStatus = status?.toLowerCase() || 'pending';
+    
     const badges = {
       pending: { bg: '#FEF3C7', text: '#92400E', icon: Clock },
       accepted: { bg: '#D1FAE5', text: '#065F46', icon: CheckCircle },
       rejected: { bg: '#FEE2E2', text: '#7F1D1D', icon: XCircle },
     };
-    const badge = badges[status] || badges.pending;
+    
+    const badge = badges[currentStatus] || badges.pending;
     const Icon = badge.icon;
+    
+    const statusKey = `status${currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}`;
+    
     return {
       style: { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', backgroundColor: badge.bg, color: badge.text, fontWeight: 'bold', fontSize: '12px' },
-      text: t[`status${status.charAt(0).toUpperCase() + status.slice(1)}`],
+      text: t[statusKey] || t.statusPending,
       icon: Icon
     };
   };
@@ -199,13 +210,52 @@ export default function SubmissionReviewPage() {
                       <td style={{ padding: '16px', fontWeight: '600', color: colors.primary }}>{abstract.authorName}</td>
                       <td style={{ padding: '16px', color: '#334155' }}>{abstract.title}</td>
                       <td style={{ padding: '16px', color: '#64748b' }}>{abstract.email}</td>
-                      <td style={{ padding: '16px', color: '#94a3b8' }}>{new Date(abstract.submittedAt).toLocaleDateString()}</td>
+                      {/* حل مشكلة التاريخ عبر ربطه بالحقل الصحيح في قاعدة البيانات createdAt مع معالجة الأخطاء */}
+                      <td style={{ padding: '16px', color: '#94a3b8' }}>
+                        {abstract.createdAt ? new Date(abstract.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US') : ''}
+                      </td>
                       <td style={{ padding: '16px' }}><div style={badge.style}><Icon size={14} /> {badge.text}</div></td>
                       <td style={{ padding: '16px' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          {abstract.filepath && <a href={abstract.filepath} download style={{ padding: '8px', background: '#eff6ff', borderRadius: '6px', color: colors.primary }} title={t.download}><Download size={14} /></a>}
-                          <button onClick={() => updateStatus(abstract.id, 'accepted')} disabled={selectedId === abstract.id || abstract.status === 'accepted'} style={{ padding: '8px', background: '#dcfce7', borderRadius: '6px', color: colors.success, border: 'none', cursor: 'pointer' }}><CheckCircle size={14} /></button>
-                          <button onClick={() => updateStatus(abstract.id, 'rejected')} disabled={selectedId === abstract.id || abstract.status === 'rejected'} style={{ padding: '8px', background: '#fee2e2', borderRadius: '6px', color: colors.danger, border: 'none', cursor: 'pointer' }}><XCircle size={14} /></button>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          {/* التعديل الجوهري: استبدال filepath بـ pdfUrl السحابي الصحيح وإضافة تنسيق متناسق لأيقونة التحميل */}
+                          {abstract.pdfUrl && (
+                            <a 
+                              href={abstract.pdfUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={{ 
+                                padding: '8px', 
+                                background: '#eff6ff', 
+                                borderRadius: '6px', 
+                                color: colors.primary,
+                                border: '1px solid #bfdbfe',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer'
+                              }} 
+                              title={t.download}
+                            >
+                              <Download size={14} />
+                            </a>
+                          )}
+                          
+                          {/* أزرار الإجراءات مع فحص شامل لحالة الأحرف لمنع تفعيل الزر بعد الضغط عليه */}
+                          <button 
+                            onClick={() => updateStatus(abstract.id, 'accepted')} 
+                            disabled={selectedId === abstract.id || abstract.status === 'accepted' || abstract.status === 'ACCEPTED'} 
+                            style={{ padding: '8px', background: '#dcfce7', borderRadius: '6px', color: colors.success, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <CheckCircle size={14} />
+                          </button>
+                          
+                          <button 
+                            onClick={() => updateStatus(abstract.id, 'rejected')} 
+                            disabled={selectedId === abstract.id || abstract.status === 'rejected' || abstract.status === 'REJECTED'} 
+                            style={{ padding: '8px', background: '#fee2e2', borderRadius: '6px', color: colors.danger, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <XCircle size={14} />
+                          </button>
                         </div>
                       </td>
                     </tr>
