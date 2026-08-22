@@ -12,9 +12,13 @@ function proxyImg(url) {
   return url;
 }
 
-// ✅ دالة لاختيار الصورة حسب اللغة
-function getLanguageImage(isRtl) {
-  return isRtl ? "/ukmed.png" : "/ukmed2.png";
+// ✅ دالة للحصول على البطاقات (carousel)
+function getOrgCards(isRtl) {
+  if (isRtl) {
+    return ["/OIP.webp", "/OIP2.webp"]; // عربي
+  } else {
+    return ["/OIP.webp", "/OIP2.webp"]; // انجليزي
+  }
 }
 
 /* ─── Constants ─── */
@@ -234,7 +238,7 @@ const TRANSLATIONS = {
     edition: "• المؤتمر الثاني عشر •",
     videoLabel: "فيديو",
     noVideo: "سيتم تحميل الفيديو قريباً",
-    supportingOrg: "المؤسسة الداعمة",
+    supportingOrg: "المؤسسات الداعمة",
     registerNowTitle: "قدم بحثك الآن",
     registerNowSub: "باب التقديم مفتوح حتى 30 سبتمبر 2026",
   },
@@ -926,6 +930,15 @@ export default function Home() {
   const [mediaItems, setMediaItems] = useState(MEDIA_ITEMS_FALLBACK);
   const [newsItems, setNewsItems] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
+  const [orgCardIndex, setOrgCardIndex] = useState(0);
+
+  // ✅ Carousel للمؤسسة الداعمة - تبديل كل 5 ثواني
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOrgCardIndex((prev) => (prev + 1) % 2);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     fetch("/api/gallery/media")
@@ -1072,184 +1085,309 @@ export default function Home() {
       : String(counts.countries),
   ];
 
-  /* ════════════════════════════
-     JSX SIDEBAR BUFFERS (تعديل الـ useMemo لإعادة عناصر JSX مباشرة)
-  ════════════════════════════ */
+  const orgCards = useMemo(() => getOrgCards(isRtl), [isRtl]);
 
   const sidebarRightContent = useMemo(
     () => (
       <>
-        {/* ══ بطاقة المؤسسة الداعمة الفخمة: UK-MED ══ */}
-<div
-          style={{
-            width: "100%",
-            height: "100%",
-            borderRadius: 14,
-            overflow: "hidden",
-            border: `1.5px solid ${G}40`,
-            boxShadow: `0 4px 20px rgba(4,18,36,0.25), 0 0 0 1px ${G}20`,
-            position: "relative",
-            background: "#041224",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-         >
-          <img
-            src={getLanguageImage(isRtl)}
-            alt={isRtl ? "صورة UK-MED" : "UK-MED Supporting Institution"}
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "block",
-              objectFit: "cover",
-            }}
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-              const p = e.currentTarget.parentElement;
-              if (p)
-                p.innerHTML = `<div style="padding:20px;text-align:center;color:${G};font-size:18px;font-weight:900;">UK-MED</div>`;
-            }}
-          />
+        {/* ══ بطاقة المؤسسة الداعمة (نظيفة وبسيطة) ══ */}
+        {/* ══ بطاقة المؤسسة الداعمة — حسب دليل الهوية البصرية ══ */}
+{(() => {
+  const NAVY = "#0D1B2A";
+  const GOLD_LIGHT = "#F4D78B";
+  const GRAY_LIGHT = "#F7F9FC";
+  const GRAY = "#E6EBF1";
+  const SLATE = "#2C3E50";
+
+  const TIERS = [
+    {
+      key: "gold",
+      label: isRtl ? "الداعم الذهبي" : "Gold Sponsor",
+      badgeBg: `linear-gradient(135deg,${G},${GOLD_LIGHT},${G})`,
+      badgeText: NAVY,
+      diamond: G,
+      ring: `0 0 0 1px ${G}55, 0 14px 36px ${G}22`,
+      frameBorder: `linear-gradient(135deg,${G},${GOLD_LIGHT},${G})`,
+    },
+    {
+      key: "silver",
+      label: isRtl ? "الداعم الفضي" : "Silver Sponsor",
+      badgeBg: `linear-gradient(135deg,#C7CBD3,${GRAY},#C7CBD3)`,
+      badgeText: SLATE,
+      diamond: "#B7BDC8",
+      ring: `0 0 0 1px #B7BDC855, 0 14px 36px #B7BDC822`,
+      frameBorder: `linear-gradient(135deg,#C7CBD3,${GRAY},#C7CBD3)`,
+    },
+  ];
+  const active = TIERS[orgCardIndex] || TIERS[0];
+
+  const BENEFITS = [
+    { icon: "globe", ar: "خبرة عالمية", en: "Global Expertise" },
+    { icon: "handshake", ar: "شراكة طبية", en: "Medical Partnership" },
+    { icon: "medal", ar: "معايير عالية", en: "High Standards" },
+    { icon: "microscope", ar: "خبرة علمية", en: "Scientific Excellence" },
+  ];
+
+  const IconGlyph = ({ type, color }) => {
+    const s = { width: 18, height: 18, stroke: color, fill: "none", strokeWidth: 1.6 };
+    switch (type) {
+      case "globe":
+        return (
+          <svg viewBox="0 0 24 24" style={s}>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" />
+          </svg>
+        );
+      case "handshake":
+        return (
+          <svg viewBox="0 0 24 24" style={s}>
+            <path d="M2 12l5-4 4 3 3-3 4 1 4 5-3 3-2-2-3 3-3-3-2 2-3-3z" strokeLinejoin="round" />
+          </svg>
+        );
+      case "medal":
+        return (
+          <svg viewBox="0 0 24 24" style={s}>
+            <circle cx="12" cy="9" r="5" />
+            <path d="M9 13.5L7 21l5-3 5 3-2-7.5" strokeLinejoin="round" />
+          </svg>
+        );
+      case "microscope":
+        return (
+          <svg viewBox="0 0 24 24" style={s}>
+            <path d="M9 20h6M12 20v-4M8 16h6a2 2 0 002-2 2 2 0 00-2-2h-1V8a3 3 0 00-3-3 3 3 0 00-3 3M6 8h4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: 22,
+        overflow: "hidden",
+        boxShadow: active.ring,
+        transition: "box-shadow 0.5s ease",
+        border: `1px solid ${GRAY}`,
+      }}
+    >
+      {/* الرأس المصغّر */}
+      <div
+  style={{
+    position: "relative",
+    padding: "14px 16px 13px",
+    background: `linear-gradient(135deg,${NAVY}06,${G}0a)`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  }}
+>
+    {/* شارة الأيقونة مع توهج نابض */}
+  <div style={{ position: "relative", width: 40, height: 40, flexShrink: 0 }}>
+    {/* حلقة نابضة خلفية */}
+    <div
+      style={{
+        position: "absolute",
+        inset: -6,
+        borderRadius: 16,
+        border: `1.5px solid ${G}`,
+        animation: "icon-pulse-ring 2.4s cubic-bezier(0.22,1,0.36,1) infinite",
+        pointerEvents: "none",
+      }}
+    />
+    <div
+      style={{
+        position: "relative",
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        background: `linear-gradient(135deg,${NAVY},#1a3050)`,
+        border: `1px solid ${G}55`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        animation: "glow-gold 3s ease-in-out infinite",
+      }}
+    >
+      <svg viewBox="0 0 24 24" style={{ width: 20, height: 20, stroke: G, fill: "none", strokeWidth: 1.6 }}>
+        <path d="M4 21V6a1 1 0 011-1h6a1 1 0 011 1v15M13 21V10a1 1 0 011-1h5a1 1 0 011 1v11" strokeLinejoin="round" />
+        <path d="M7 8h1M7 11h1M7 14h1M10 8h1M10 11h1M10 14h1M16 12h1M16 15h1M16 18h1" strokeLinecap="round" />
+        <path d="M2 21h20" strokeLinecap="round" />
+      </svg>
+    </div>
+  </div>
+
+  {/* العنوان */}
+  <span
+    style={{
+      fontSize: 20,
+      fontWeight: 900,
+      color: NAVY,
+      letterSpacing: "0.4px",
+    }}
+  >
+    {t.supportingOrg}
+  </span>
+
+  {/* خط سفلي متدرّج بدل الحد العادي */}
+  <div
+    style={{
+      position: "absolute",
+      bottom: 0,
+      left: "5%",
+      right: "5%",
+      height: 1,
+      background: `linear-gradient(90deg,transparent,${G}70,transparent)`,
+    }}
+  />
+</div>
+
+
+      {/* بطاقة الشعار السداسية */}
+               <div
+        style={{
+          position: "relative",
+          padding: "6px 18px 18px",
+          background: `radial-gradient(circle at 50% 0%, ${NAVY}05, ${GRAY_LIGHT})`,
+          textAlign: "center",
+        }}
+      >
+                {/* زخرفة علوية */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 2 }}>
+          <span style={{ width: 50, height: 1, background: `linear-gradient(90deg,transparent,${G}80)` }} />
+          <span style={{ color: G, fontSize: 20 }}>✦</span>
+          <span style={{ width: 50, height: 1, background: `linear-gradient(270deg,transparent,${G}80)` }} />
         </div>
 
-        {/* ══ قادة المؤتمر (LEADERS) ══ */}
+        {/* الإطار السداسي */}
+                {/* إطار الشعار — مربع عاجي */}
         <div
+          key={`frame-${orgCardIndex}`}
           style={{
-            background: "#fff",
-            borderRadius: 16,
-            border: `1px solid ${G}28`,
-            overflow: "hidden",
-            boxShadow: "0 3px 14px rgba(27,54,93,0.07)",
-            marginTop: 16,
+            width: 250,
+            height: 200,
+            margin: "0 auto 14px",
+            borderRadius: 20,
+            padding: 3,
+            background: active.frameBorder,
+            boxShadow: "0 10px 26px rgba(0,0,0,0.14)",
+            animation: "fade-in 0.5s ease",
           }}
         >
           <div
             style={{
-              padding: "12px 16px",
-              background: `linear-gradient(135deg,${B}06,${G}08)`,
-              borderBottom: `1px solid ${B}0c`,
+              width: "100%",
+              height: "100%",
+              borderRadius: 17,
+              background: "#FFFCF4",
+              border: `1px solid ${G}22`,
               display: "flex",
               alignItems: "center",
-              gap: 10,
+              justifyContent: "center",
+              overflow: "hidden",
+              padding: 3,
             }}
           >
-            <span style={{ fontSize: 18 }}>👥</span>
-            <span style={{ fontSize: 14, fontWeight: 900, color: B }}>
-              {t.leadersTitle}
-            </span>
+            <img
+              src={orgCards[orgCardIndex]}
+              alt={active.label}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+                const p = e.currentTarget.parentElement;
+                if (p)
+                  p.innerHTML = `<div style="font-size:15px;font-weight:900;color:${NAVY};">UK-MED</div>`;
+              }}
+            />
           </div>
-          {[
-            { data: t.president, badge: t.presidentBadge, bc: R },
-            { data: t.supervisor, badge: t.supervisorBadge, bc: "#9A7A10" },
-          ].map(({ data, badge, bc }, idx) => (
+        </div>
+
+       
+
+        {/* شارة الفئة */}
+        <div
+          key={`badge-${orgCardIndex}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "5px 16px",
+            borderRadius: 30,
+            background: active.badgeBg,
+            boxShadow: "0 3px 10px rgba(0,0,0,0.15)",
+            animation: "fade-in 0.5s ease",
+          }}
+        >
+          <span style={{ width: 8, height: 8, background: active.badgeText, opacity: 0.75, transform: "rotate(45deg)" }} />
+          <span style={{ fontSize: 11, fontWeight: 900, color: active.badgeText, letterSpacing: "0.4px" }}>
+            {active.label}
+          </span>
+        </div>
+      </div>
+
+      {/* صف الأيقونات */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4,1fr)",
+          gap: 4,
+          padding: "14px 10px",
+          background: "#fff",
+          borderTop: `1px solid ${GRAY}`,
+        }}
+      >
+        {BENEFITS.map((b, i) => (
+          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, textAlign: "center" }}>
             <div
-              key={idx}
-              onClick={() => setModal({ type: "person", data })}
-              onMouseEnter={() => setHoveredLeader(idx)}
-              onMouseLeave={() => setHoveredLeader(null)}
               style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: `1.4px solid ${G}55`,
+                background: `${G}0a`,
                 display: "flex",
                 alignItems: "center",
-                gap: 14,
-                padding: "14px 16px",
-                borderBottom: idx === 0 ? `1px solid ${B}08` : "none",
-                cursor: "pointer",
-                background:
-                  hoveredLeader === idx
-                    ? `linear-gradient(135deg,${G}06,${B}04)`
-                    : "#fff",
-                transition: "background 0.25s, transform 0.25s",
-                transform:
-                  hoveredLeader === idx
-                    ? isRtl
-                      ? "translateX(-3px)"
-                      : "translateX(3px)"
-                    : "translateX(0)",
+                justifyContent: "center",
               }}
             >
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <Avatar
-                  src={data.image}
-                  name={data.name}
-                  size={isMobile ? 52 : 64}
-                  border={3}
-                  float={hoveredLeader === idx}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: -2,
-                    [isRtl ? "left" : "right"]: -2,
-                    width: 18,
-                    height: 18,
-                    borderRadius: "50%",
-                    background: bc,
-                    border: "2px solid #fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 8,
-                    color: "#fff",
-                    fontWeight: 900,
-                  }}
-                >
-                  ✓
-                </div>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    color: bc,
-                    marginBottom: 3,
-                    background: `${bc}12`,
-                    padding: "2px 8px",
-                    borderRadius: 20,
-                    display: "inline-block",
-                  }}
-                >
-                  {badge}
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 900,
-                    color: B,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {data.name}
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: "#64748b",
-                    marginTop: 2,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {data.title?.split("—")[0].trim()}
-                </div>
-              </div>
-              <span
-                style={{
-                  color: hoveredLeader === idx ? G : "#cbd5e1",
-                  fontSize: 14,
-                  flexShrink: 0,
-                  transition: "color 0.2s",
-                }}
-              >
-                {isRtl ? "‹" : "›"}
-              </span>
+              <IconGlyph type={b.icon} color={G} />
             </div>
-          ))}
+            <span style={{ fontSize: 9, fontWeight: 700, color: SLATE, lineHeight: 1.3 }}>
+              {isRtl ? b.ar : b.en}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* البانر السفلي */}
+      <div
+        style={{
+          background: `linear-gradient(135deg,${NAVY},#152840)`,
+          padding: "10px 14px",
+          textAlign: "center",
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 2,
+            background: `linear-gradient(90deg,transparent,${G},transparent)`,
+          }}
+        />
+        <div style={{ fontSize: 10, fontWeight: 700, color: GOLD_LIGHT, letterSpacing: "0.3px" }}>
+          {t.conferenceTitle}
         </div>
+      </div>
+    </div>
+  );
+})()}
 
         {/* ══ لجان المؤتمر (COMMITTEES) ══ */}
         <div
@@ -1374,7 +1512,7 @@ export default function Home() {
         </div>
       </>
     ),
-    [t, isRtl, isMobile, hoveredLeader, hoveredCommittee],
+    [t, isRtl, isMobile, hoveredLeader, hoveredCommittee, orgCardIndex, orgCards],
   );
 
   const sidebarLeftContent = useMemo(
@@ -1614,6 +1752,11 @@ export default function Home() {
         @keyframes float-avatar{0%,100%{transform:translateY(0px);}50%{transform:translateY(-6px);}}
         @keyframes shimmer-border{0%{background-position:200% center;}100%{background-position:-200% center;}}
         @keyframes glow-gold{0%,100%{box-shadow:0 0 8px 2px rgba(212,175,55,0.25);}50%{box-shadow:0 0 22px 6px rgba(212,175,55,0.55),0 0 40px 10px rgba(212,175,55,0.18);}}
+        @keyframes icon-pulse-ring{
+  0%{transform:scale(0.85);opacity:0.7;}
+  70%{transform:scale(1.25);opacity:0;}
+  100%{transform:scale(1.25);opacity:0;}
+}
         @keyframes shimmer-card{0%{background-position:-200% center;}100%{background-position:200% center;}}
         @keyframes slide-in-right{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
         @keyframes slide-in-left{from{opacity:0;transform:translateX(-40px);}to{opacity:1;transform:translateX(0);}}
