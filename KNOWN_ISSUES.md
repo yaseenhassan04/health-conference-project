@@ -86,4 +86,15 @@ This is a record of pre-existing defects identified by `PROJECT_AUDIT.md` (Secti
 
 ---
 
+## Deliberate, approved deviations made during the structural refactor
+
+Unlike the numbered entries above (which are pre-existing defects, untouched), this section records the one place where the Phase 5 refactor was explicitly approved to change visible behavior.
+
+### D1. Committee-modal visual style unified to match the person-modal style
+- **Where**: `app/page.js`, the "person" and "committee" modal branches (originally lines 2625–2875 and 2877–3214), now both rendered via `components/home/PersonModal.jsx`.
+- **What changed**: Before the refactor, the committee-head modal and the person (president/supervisor) modal had drifted into six small visual differences, only one of which (the expertise-pill hover handler) had been caught by `PROJECT_AUDIT.md`. Reading the code directly during the refactor surfaced five more: the header background gradient (3-stop vs. 2-stop), a decorative background circle behind the avatar (present vs. absent), the avatar frame's drop shadow (present vs. absent), the bottom-right checkmark badge color (red/white vs. gold/navy), and the "Expertise" section header styling (icon badge vs. plain text).
+- **Decision**: presented to the user as a full diff; the user explicitly chose to unify both call sites onto the richer "person" style rather than parameterize each difference to preserve the two modals' prior appearances exactly. This means the **committee-head modal's rendered appearance changed** as a direct, approved consequence of this refactor — it is not an accidental regression.
+
+---
+
 *This file is a running record. Entries are added as issues are identified; existing entries are not removed or "resolved" by the structural refactor itself — only by dedicated bug-fix work outside this branch's scope.*

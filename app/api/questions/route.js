@@ -1,13 +1,10 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { ApiError } from '@/server/lib/apiError';
+import { listQuestions, createQuestion } from '@/server/services/questions.service';
 
 export async function GET() {
   try {
-    const questions = await prisma.question.findMany({
-      orderBy: { createdAt: 'asc' },
-    });
-    return new Response(JSON.stringify({ questions }), { status: 200 });
+    const result = await listQuestions();
+    return new Response(JSON.stringify(result), { status: 200 });
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
@@ -16,21 +13,12 @@ export async function GET() {
 export async function POST(req) {
   try {
     const data = await req.json();
-    const { text, author } = data;
-
-    if (!text) {
-      return new Response(JSON.stringify({ error: 'Text is required' }), { status: 400 });
-    }
-
-    const question = await prisma.question.create({
-      data: {
-        text,
-        author: author || 'ضيف',
-      }
-    });
-
-    return new Response(JSON.stringify({ question }), { status: 201 });
+    const { status, body } = await createQuestion(data);
+    return new Response(JSON.stringify(body), { status });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return new Response(JSON.stringify(error.body), { status: error.status });
+    }
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 }
