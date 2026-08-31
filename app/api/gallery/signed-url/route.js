@@ -1,25 +1,21 @@
-import { NextResponse } from "next/server";
-import { getDownloadUrl } from "@vercel/blob";
+import { NextResponse } from 'next/server';
+import { ApiError } from '@/server/lib/apiError';
+import { createSignedUrl } from '@/server/services/gallery/blob.service';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
-  const blobUrl = searchParams.get("url");
-
-  if (!blobUrl) {
-    return NextResponse.json({ error: "url مطلوب" }, { status: 400 });
-  }
+  const blobUrl = searchParams.get('url');
 
   try {
-    const { url } = await getDownloadUrl(blobUrl, {
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-      expiresIn: 3600, // ساعة واحدة
-    });
-
-    return NextResponse.json({ signedUrl: url });
+    const result = await createSignedUrl({ blobUrl });
+    return NextResponse.json(result);
   } catch (err) {
-    console.error("❌ [signed-url]", err);
+    if (err instanceof ApiError) {
+      return NextResponse.json(err.body, { status: err.status });
+    }
+    console.error('❌ [signed-url]', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

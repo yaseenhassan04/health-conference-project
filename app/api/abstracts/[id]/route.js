@@ -1,24 +1,15 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { ApiError } from '@/server/lib/apiError';
+import { updateAbstractStatusById } from '@/server/services/abstracts.service';
 
 export async function PUT(req, { params }) {
   try {
-    const id = parseInt(params.id);
     const data = await req.json();
-    const { status } = data; // ACCEPTED, REJECTED
-
-    if (!status) {
-      return new Response(JSON.stringify({ error: 'Status is required' }), { status: 400 });
-    }
-
-    const updated = await prisma.abstract.update({
-      where: { id },
-      data: { status }
-    });
-
-    return new Response(JSON.stringify({ abstract: updated }), { status: 200 });
+    const result = await updateAbstractStatusById({ id: params.id, status: data.status });
+    return new Response(JSON.stringify(result), { status: 200 });
   } catch (error) {
+    if (error instanceof ApiError) {
+      return new Response(JSON.stringify(error.body), { status: error.status });
+    }
     console.error(error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }

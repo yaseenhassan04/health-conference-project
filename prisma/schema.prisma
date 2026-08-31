@@ -2,11 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
 model Library {
   id          Int      @id @default(autoincrement())
   title       String
@@ -19,6 +19,7 @@ model Library {
   published   Boolean  @default(true)
   createdAt   DateTime @default(now())
 }
+
 model User {
   id         Int        @id @default(autoincrement())
   fullName   String
@@ -80,6 +81,7 @@ model Admin {
   password  String
   createdAt DateTime @default(now())
 }
+
 model GalleryMedia {
   id        Int      @id @default(autoincrement())
   src       String
@@ -114,4 +116,20 @@ model News {
   content   String
   published Boolean  @default(true)
   createdAt DateTime @default(now())
+}
+
+model LiveSettings {
+  id        Int      @id @default(1)
+  meetLink  String   @default("")
+  isLive    Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+model LiveAttendee {
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  phone     String
+  email     String   @unique
+  specialty String
+  joinedAt  DateTime @default(now())
 }

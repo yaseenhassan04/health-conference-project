@@ -31,7 +31,7 @@ export const ROLE_CONFIG = {
     color: "#C8102E",
     bg: "rgba(200,16,46,0.1)",
     icon: "⚙️",
-    pages: ["library", "submission", "gallery", "news", "users"],
+    pages: ["library", "submission", "gallery", "news", "live", "users"],
   },
   doctor: {
     label: "دكتور",
@@ -45,7 +45,7 @@ export const ROLE_CONFIG = {
     color: "#D4AF37",
     bg: "rgba(212,175,55,0.1)",
     icon: "📸",
-    pages: ["gallery", "news"],
+    pages: ["gallery", "news", "live"],
   },
 };
 
@@ -54,6 +54,7 @@ export const PAGE_META = {
   submission: { label: "الأبحاث المقدمة",   icon: "📋", path: "/dashboard/submission" },
   gallery:    { label: "ألبوم الصور",        icon: "🖼️", path: "/dashboard/gallery" },
   news:       { label: "الأخبار",            icon: "📰", path: "/dashboard/news" },
+  live:       { label: "البث المباشر",      icon: "📡", path: "/dashboard/live" },
   users:      { label: "إدارة المستخدمين",  icon: "👥", path: "/dashboard/users" },
 };
 

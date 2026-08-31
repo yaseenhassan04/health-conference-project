@@ -7,177 +7,82 @@
  */
 
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { del } from '@vercel/blob'; // استيراد حزمة الحذف السحابي للملفات
-
-const prisma = new PrismaClient();
+import { isAdminAuthorized } from '@/server/lib/adminAuth';
+import { ApiError } from '@/server/lib/apiError';
+import { listLibraryItems, createLibraryItem, updateLibraryItem, deleteLibraryItem } from '@/server/services/library.service';
 
 // منع الـ Caching لضمان قراءة وتحديث فوري للمراجع والكتب العلمية
 export const dynamic = 'force-dynamic';
 
-// دالة التحقق من التوكن السري للإدارة لحماية المسارات
-function checkAuth(req) {
-  return req.headers.get('x-admin-token') === process.env.ADMIN_TOKEN;
-}
-
 /* ─── GET: قائمة المراجع (ذكية: تظهر كلها للمشرف، والمنشورة فقط للزوار) ─── */
 export async function GET(req) {
   try {
-    const isAdmin = checkAuth(req);
-
-    let items;
-    if (isAdmin) {
-      // المشرف يرى كل المراجع الطبية (المنشورة والمسودات) لترتيبها وتعديلها
-      items = await prisma.library.findMany({
-        orderBy: { createdAt: 'desc' }
-      });
-    } else {
-      // الزوار والأطباء يرون فقط المراجع التي تم الموافقة على نشرها
-      items = await prisma.library.findMany({
-        where: { published: true },
-        orderBy: { createdAt: 'desc' }
-      });
-    }
-
-    return NextResponse.json({ items });
+    const result = await listLibraryItems({ isAdmin: isAdminAuthorized(req) });
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("❌ [library_fetch_error]", error);
-    return NextResponse.json({ error: "حدث خطأ أثناء جلب مراجع المكتبة العلمية" }, { status: 500 });
+    console.error('❌ [library_fetch_error]', error);
+    return NextResponse.json({ error: 'حدث خطأ أثناء جلب مراجع المكتبة العلمية' }, { status: 500 });
   }
 }
 
 /* ─── POST: إضافة مرجع علمي جديد ─── */
 export async function POST(req) {
-  if (!checkAuth(req)) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const formData = await req.formData(); // ✅ بدل req.json()
-    const title  = formData.get('title');
-    const author = formData.get('author') || 'اللجنة العلمية';
-    const file   = formData.get('file');
-
-    if (!title?.trim()) {
-      return NextResponse.json({ error: 'العنوان مطلوب' }, { status: 400 });
-    }
-    if (!file) {
-      return NextResponse.json({ error: 'الملف مطلوب' }, { status: 400 });
-    }
-
-    // رفع الملف للـ Blob
-    const { put } = await import('@vercel/blob');
-    const bytes      = await file.arrayBuffer();
-    const fileBuffer = Buffer.from(bytes);
-    const filename   = `${Date.now()}-${author.replace(/\s+/g, '-')}.pdf`;
-
-    const blob = await put(`library/${filename}`, fileBuffer, {
-      access: 'public',
-      token: process.env.PUBLIC_BLOB_READ_WRITE_TOKEN,
+    const formData = await req.formData();
+    const { status, body } = await createLibraryItem({
+      title: formData.get('title'),
+      author: formData.get('author'),
+      file: formData.get('file'),
     });
-
-    // حفظ في قاعدة البيانات
-    const newItem = await prisma.library.create({
-      data: {
-        title:    title.trim(),
-        author:   author.trim(),
-        category: 'General',
-        type:     'book',
-        fileUrl:  blob.url,
-        description: '',
-        year:     new Date().getFullYear(),
-        published: true,
-      }
-    });
-
-    return NextResponse.json({ success: true, data: newItem }, { status: 201 });
-
+    return NextResponse.json(body, { status });
   } catch (err) {
-    console.error("❌ [library_create_error]", err);
+    if (err instanceof ApiError) {
+      return NextResponse.json(err.body, { status: err.status });
+    }
+    console.error('❌ [library_create_error]', err);
     return NextResponse.json({ error: 'حدث خطأ في الخادم', details: err.message }, { status: 500 });
   }
 }
 
 /* ─── PATCH: تعديل مرجع علمي ─── */
 export async function PATCH(req) {
-  if (!checkAuth(req)) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const body = await req.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: 'معرف العنصر (id) مطلوب' }, { status: 400 });
-    }
-
-    const targetId = isNaN(id) ? id : parseInt(id);
-
-    // حماية البيانات المستبعدة من التعديل العشوائي للروابط والمعرفات
-    delete updates.id;
-    delete updates.createdAt;
-
-    if (updates.year) updates.year = parseInt(updates.year);
-    if (updates.published !== undefined) updates.published = Boolean(updates.published);
-
-    const updatedItem = await prisma.library.update({
-      where: { id: targetId },
-      data: updates
-    });
-
-    return NextResponse.json({ success: true, item: updatedItem });
+    const result = await updateLibraryItem(body);
+    return NextResponse.json(result);
   } catch (err) {
-    console.error("❌ [library_update_error]", err);
+    if (err instanceof ApiError) {
+      return NextResponse.json(err.body, { status: err.status });
+    }
+    console.error('❌ [library_update_error]', err);
     return NextResponse.json({ error: 'العنصر غير موجود أو البيانات المرسلة غير صالحة' }, { status: 500 });
   }
 }
 
 /* ─── DELETE: حذف مرجع (+ تنظيف الملف من السحابة فوراً) ─── */
 export async function DELETE(req) {
-  if (!checkAuth(req)) {
+  if (!isAdminAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-
-    if (!id) {
-      return NextResponse.json({ error: 'معرف العنصر (id) مطلوب كـ Parameter' }, { status: 400 });
-    }
-
-    const targetId = isNaN(id) ? id : parseInt(id);
-
-    // 1️⃣ العثور على المرجع قبل حذفه للتحقق من وجود ملف ملحق سحابي
-    const targetItem = await prisma.library.findUnique({
-      where: { id: targetId }
-    });
-
-    if (!targetItem) {
-      return NextResponse.json({ error: 'العنصر غير موجود بالفعل' }, { status: 404 });
-    }
-
-    // 2️⃣ حماية السحابة: حذف الملف من Vercel Blob إن وجد وتوفير مساحة المستودع
-    if (targetItem.fileUrl && targetItem.fileUrl.includes("public.blob.vercel-storage.com")) {
-      try {
-        await del(targetItem.fileUrl); // دالة del تحذف كود الـ PDF أو الـ Word سحابياً فوراً
-      } catch (blobErr) {
-        console.error('تنبيـه: فشل حذف الملف من السحابة، سنستمر بحذف البيانات الوصفية:', blobErr.message);
-      }
-    }
-
-    // 3️⃣ حذفه نهائياً من قاعدة البيانات
-    await prisma.library.delete({
-      where: { id: targetId }
-    });
-
-    return NextResponse.json({ success: true, message: "تم حذف المرجع العلمي والملف التابع له بنجاح" });
-
+    const result = await deleteLibraryItem({ id });
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("❌ [library_delete_error]", error);
+    if (error instanceof ApiError) {
+      return NextResponse.json(error.body, { status: error.status });
+    }
+    console.error('❌ [library_delete_error]', error);
     return NextResponse.json({ error: 'حدث خطأ داخلي في الخادم أثناء تنفيذ عملية الحذف' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }
