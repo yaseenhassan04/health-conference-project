@@ -3,7 +3,7 @@ const nextConfig = {
   // رفع حد حجم الملفات للـ API routes (مهم لرفع الملفات)
   experimental: {
     serverActions: {
-      bodySizeLimit: '20mb',
+      bodySizeLimit: '50mb',
     },
   },
 

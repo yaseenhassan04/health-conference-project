@@ -2,18 +2,14 @@
 /**
  * dashboard/layout.jsx
  * حماية كل صفحات /dashboard/* + Top Navbar
- * يقرأ JWT من localStorage (المفتاح: "auth_token")
- * payload متوقع: { id, name, role, avatar? }
  */
 
 import { useEffect, useState, createContext, useContext } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
-/* ─── Auth Context ─── */
 export const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
-/* ─── JWT decoder (بدون مكتبة خارجية) ─── */
 function decodeJWT(token) {
   try {
     const payload = token.split(".")[1];
@@ -31,7 +27,7 @@ export const ROLE_CONFIG = {
     color: "#C8102E",
     bg: "rgba(200,16,46,0.1)",
     icon: "⚙️",
-    pages: ["library", "submission", "gallery", "news", "live", "users"],
+    pages: ["library", "submission", "gallery", "news", "live", "users", "workshops"], // ← أضفنا workshops
   },
   doctor: {
     label: "دكتور",
@@ -50,12 +46,13 @@ export const ROLE_CONFIG = {
 };
 
 export const PAGE_META = {
-  library:    { label: "المكتبة الرقمية",   icon: "📚", path: "/dashboard/library" },
-  submission: { label: "الأبحاث المقدمة",   icon: "📋", path: "/dashboard/submission" },
-  gallery:    { label: "ألبوم الصور",        icon: "🖼️", path: "/dashboard/gallery" },
-  news:       { label: "الأخبار",            icon: "📰", path: "/dashboard/news" },
-  live:       { label: "البث المباشر",      icon: "📡", path: "/dashboard/live" },
-  users:      { label: "إدارة المستخدمين",  icon: "👥", path: "/dashboard/users" },
+  library:    { label: "المكتبة الرقمية",     icon: "📚", path: "/dashboard/library" },
+  submission: { label: "الأبحاث المقدمة",     icon: "📋", path: "/dashboard/submission" },
+  gallery:    { label: "ألبوم الصور",          icon: "🖼️", path: "/dashboard/gallery" },
+  news:       { label: "الأخبار",              icon: "📰", path: "/dashboard/news" },
+  live:       { label: "البث المباشر",        icon: "📡", path: "/dashboard/live" },
+  users:      { label: "إدارة المستخدمين",    icon: "👥", path: "/dashboard/users" },
+  workshops:  { label: "ورشات العمل",          icon: "📝", path: "/dashboard/workshops" }, // ← جديد
 };
 
 /* ─── Navbar ─── */
@@ -73,14 +70,12 @@ function Navbar({ user, onLogout }) {
       fontFamily: "'Cairo', sans-serif",
       direction: "rtl",
     }}>
-      {/* الشريط العلوي */}
       <div style={{
         display: "flex", alignItems: "center",
         justifyContent: "space-between",
         padding: "0 28px", height: 62,
         borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}>
-        {/* اللوجو */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10,
@@ -98,9 +93,7 @@ function Navbar({ user, onLogout }) {
           </div>
         </div>
 
-        {/* معلومات المستخدم */}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          {/* Role Badge */}
           <div style={{
             display: "flex", alignItems: "center", gap: 6,
             background: role.bg,
@@ -113,7 +106,6 @@ function Navbar({ user, onLogout }) {
             </span>
           </div>
 
-          {/* اسم المستخدم */}
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
             background: "rgba(255,255,255,0.07)",
@@ -133,7 +125,6 @@ function Navbar({ user, onLogout }) {
             </span>
           </div>
 
-          {/* زر تسجيل الخروج */}
           <button
             onClick={onLogout}
             style={{
@@ -153,13 +144,11 @@ function Navbar({ user, onLogout }) {
         </div>
       </div>
 
-      {/* شريط التنقل السفلي */}
       <div style={{
         display: "flex", alignItems: "center",
         gap: 4, padding: "0 28px", height: 46,
         overflowX: "auto",
       }}>
-        {/* رابط الرئيسية دائماً */}
         <NavLink
           href="/dashboard"
           label="الرئيسية"
@@ -210,7 +199,6 @@ function NavLink({ label, icon, active, onClick }) {
   );
 }
 
-/* ─── Loading Screen ─── */
 function LoadingScreen() {
   return (
     <div style={{
@@ -239,7 +227,6 @@ function LoadingScreen() {
   );
 }
 
-/* ─── Layout الرئيسي ─── */
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -280,7 +267,7 @@ export default function DashboardLayout({ children }) {
           ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         `}</style>
         <Navbar user={user} onLogout={handleLogout} />
-        <main>{children}</main>
+        <main style={{ width: "100%" }}>{children}</main>
       </div>
     </AuthContext.Provider>
   );

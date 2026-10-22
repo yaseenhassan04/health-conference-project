@@ -133,3 +133,16 @@ model LiveAttendee {
   specialty String
   joinedAt  DateTime @default(now())
 }
+model WorkshopRegistration {
+  id           Int      @id @default(autoincrement())
+  fullNameAr   String
+  fullNameEn   String
+  phone        String
+  whatsapp     String
+  email        String   @unique
+  specialty    String
+  workplace    String
+  yearsExp     String   @default("")
+  workshops    String   // JSON array: ["w1","w3"]
+  createdAt    DateTime @default(now())
+}

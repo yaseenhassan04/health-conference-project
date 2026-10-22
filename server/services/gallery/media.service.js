@@ -51,12 +51,17 @@ export function addGalleryMedia(body) {
 
   const db = readDb();
   const newItem = {
+    id: Date.now(),
     src: finalUrl,
+    thumbnail: body.thumbnail || '',
+    type: body.type || 'image',
     captionAr: body.captionAr || body.title || '',
     captionEn: body.captionEn || '',
     tag: body.tag || 'فعاليات',
     tagEn: body.tagEn || 'Events',
-    id: Date.now(),
+    category: body.category ? Number(body.category) : 1,
+    published: body.published !== false,
+    order: typeof body.order === 'number' ? body.order : db.items.length,
   };
 
   db.items.unshift(newItem);
@@ -64,22 +69,51 @@ export function addGalleryMedia(body) {
   return db;
 }
 
+// 💡 تعديل دالة الحذف: تحويل الطرفين إلى String للمقارنة الآمنة وحذف العنصر نهائياً
 export function deleteGalleryMedia({ id }) {
   const db = readDb();
-  db.items = db.items.filter((item) => item.id !== id);
+  const initialCount = db.items.length;
+  
+  db.items = db.items.filter((item) => String(item.id) !== String(id));
+  
+  if (db.items.length === initialCount) {
+    console.warn(`⚠️ لم يتم العثور على عنصر بالمُعرّف: ${id} للحذف`);
+  }
+
   writeDb(db);
   return db;
+}
+
+// 💡 إضافة دالة التعديل والترتيب (PATCH) لضمان توافقها مع Route.js
+export function updateGalleryMedia({ id, patch }) {
+  const db = readDb();
+  const index = db.items.findIndex((item) => String(item.id) === String(id));
+
+  if (index === -1) {
+    throw new ApiError(404, { error: 'العنصر المراد تعديله غير موجود' });
+  }
+
+  // دمج البيانات التحديثية مع العنصر القديم
+  db.items[index] = {
+    ...db.items[index],
+    ...patch,
+  };
+
+  writeDb(db);
+  return { item: db.items[index], items: db.items };
 }
 
 export function saveGalleryScreenshot({ url, captionAr, captionEn, tag, tagEn }) {
   const db = readDb();
   db.items.unshift({
+    id: Date.now(),
     src: url,
     captionAr,
     captionEn,
     tag,
     tagEn,
-    id: Date.now(),
+    category: 1,
+    published: true,
   });
   writeDb(db);
   return { success: true };

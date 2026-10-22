@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-
+import MediaManager from "./MediaManager";
 const B = "#1B365D", R = "#C8102E", G = "#D4AF37";
 // استبدل السطر الخامس بهذا السطر وتأكد أن القيمة الاحتياطية تطابق السيرفر تماماً
 const TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN || "samoud2025";
@@ -36,174 +36,7 @@ function DropZone({ onFile, label="اسحب صورة أو اضغط للرفع" }
   );
 }
 
-/* ══════════════════════════════
-   تاب 1 — معرض الوسائط
-══════════════════════════════ */
-function MediaCarouselTab({ showToast }) {
-  const [items, setItems]         = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [editItem, setEditItem]   = useState(null);
-  const [showForm, setShowForm]   = useState(false);
-  const EMPTY = { src:"", captionAr:"", captionEn:"", tag:"فعاليات", tagEn:"Events" };
-  const TAG_OPTIONS = [{ ar:"فعاليات",en:"Events" },{ ar:"ورش",en:"Workshops" },{ ar:"متحدثون",en:"Speakers" },{ ar:"جلسات",en:"Sessions" },{ ar:"مستشفى",en:"Hospital" },{ ar:"أخرى",en:"Other" }];
-  const inputStyle = { width:"100%", padding:"9px 12px", borderRadius:10, border:"1.5px solid #e2e8f0", fontSize:13, fontFamily:"'Cairo',sans-serif", color:B, background:"#F8FAFC", outline:"none", direction:"rtl" };
 
-  useEffect(()=>{ fetchItems(); },[]);
-
-  const fetchItems = async () => {
-    setLoading(true);
-    try {
-      const res  = await fetch("/api/gallery/media", { headers:{ "x-admin-token": TOKEN } });
-      const data = await res.json();
-      setItems(data.items || []);
-    } catch { showToast("فشل التحميل", false); }
-    finally  { setLoading(false); }
-  };
-
-  const handleFileSelect = async (file) => {
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res  = await fetch("/api/gallery/upload", {
-        method: "POST",
-        body: fd,
-        headers: { "x-admin-token": TOKEN },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "فشل الرفع");
-      setEditItem(e => ({ ...e, src: data.url }));
-      showToast("تم رفع الصورة ✨");
-    } catch (err) {
-      showToast(err.message, false);
-    } finally { setUploading(false); }
-  };
-
-  const handleSave = async () => {
-    if (!editItem.src)              { alert("الصورة مطلوبة"); return; }
-    if (!editItem.captionAr.trim()) { alert("التسمية مطلوبة"); return; }
-    const isEdit = !!editItem.id;
-    try {
-      const res  = await fetch("/api/gallery/media", {
-        method: isEdit ? "PATCH" : "POST",
-        headers: { "Content-Type":"application/json", "x-admin-token": TOKEN },
-        body: JSON.stringify(editItem),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setItems(prev => isEdit ? prev.map(i=>i.id===editItem.id?data.item:i) : [...prev, data.item]);
-      setShowForm(false); setEditItem(null);
-      showToast(isEdit ? "تم التحديث" : "تمت الإضافة ✨");
-    } catch (e) { showToast(e.message, false); }
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm("حذف هذه الصورة؟")) return;
-    try {
-      const res = await fetch(`/api/gallery/media?id=${id}`, {
-        method: "DELETE",
-        headers: { "x-admin-token": TOKEN },
-      });
-      if (!res.ok) throw new Error();
-      setItems(prev => prev.filter(i=>i.id!==id));
-      showToast("تم الحذف");
-    } catch { showToast("فشل الحذف", false); }
-  };
-
-  return (
-    <div>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20, flexWrap:"wrap", gap:10 }}>
-        <div>
-          <div style={{ fontSize:15, fontWeight:900, color:B }}>🎞️ صور معرض الوسائط</div>
-          <div style={{ fontSize:12, color:"#94a3b8", marginTop:2 }}>تظهر في السلايدر على الصفحة الرئيسية</div>
-        </div>
-        <button onClick={()=>{setEditItem({...EMPTY});setShowForm(true)}}
-          style={{ padding:"9px 18px", borderRadius:10, background:B, color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>
-          ➕ إضافة صورة
-        </button>
-      </div>
-
-      {showForm && editItem && (
-        <div style={{ background:"#fff", borderRadius:16, border:`1.5px solid ${G}40`, padding:20, marginBottom:20, boxShadow:`0 4px 20px ${G}18` }}>
-          <div style={{ fontSize:14, fontWeight:900, color:B, marginBottom:16 }}>{editItem.id?"✏️ تعديل":"➕ إضافة صورة"}</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-            <div style={{ gridColumn:"1/-1" }}>
-              {editItem.src ? (
-                <div style={{ position:"relative", borderRadius:12, overflow:"hidden", height:180 }}>
-                  <img src={editItem.src} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  <button onClick={()=>setEditItem(e=>({...e,src:""}))}
-                    style={{ position:"absolute", top:8, left:8, background:R, color:"#fff", border:"none", borderRadius:8, padding:"4px 10px", fontSize:11, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>
-                    ✕ تغيير
-                  </button>
-                  {uploading && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:14, fontWeight:700 }}>⏳ جاري الرفع...</div>}
-                </div>
-              ) : <DropZone onFile={handleFileSelect} />}
-            </div>
-            <div>
-              <label style={{ fontSize:12, fontWeight:700, color:B, display:"block", marginBottom:5 }}>التسمية (عربي) *</label>
-              <input style={inputStyle} value={editItem.captionAr} onChange={e=>setEditItem(p=>({...p,captionAr:e.target.value}))} placeholder="مثال: حفل الافتتاح" />
-            </div>
-            <div>
-              <label style={{ fontSize:12, fontWeight:700, color:B, display:"block", marginBottom:5 }}>Caption (English)</label>
-              <input style={{...inputStyle,direction:"ltr"}} value={editItem.captionEn} onChange={e=>setEditItem(p=>({...p,captionEn:e.target.value}))} placeholder="e.g. Opening Ceremony" />
-            </div>
-            <div style={{ gridColumn:"1/-1" }}>
-              <label style={{ fontSize:12, fontWeight:700, color:B, display:"block", marginBottom:8 }}>التصنيف</label>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                {TAG_OPTIONS.map(t=>(
-                  <button key={t.ar} type="button" onClick={()=>setEditItem(p=>({...p,tag:t.ar,tagEn:t.en}))}
-                    style={{ padding:"5px 14px", borderRadius:20, fontSize:12, cursor:"pointer", background:editItem.tag===t.ar?G:"#F1F5F9", color:editItem.tag===t.ar?B:"#64748b", border:editItem.tag===t.ar?`1.5px solid ${G}`:"1.5px solid transparent", fontFamily:"'Cairo',sans-serif", fontWeight:600 }}>
-                    {t.ar}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div style={{ display:"flex", gap:10, justifyContent:"flex-end", marginTop:16 }}>
-            <button onClick={()=>{setShowForm(false);setEditItem(null)}}
-              style={{ padding:"9px 18px", borderRadius:10, border:"1px solid #e2e8f0", background:"#fff", fontSize:13, cursor:"pointer", fontFamily:"'Cairo',sans-serif", color:"#64748b" }}>إلغاء</button>
-            <button onClick={handleSave} disabled={uploading}
-              style={{ padding:"9px 22px", borderRadius:10, background:uploading?"#94a3b8":B, color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor:uploading?"not-allowed":"pointer", fontFamily:"'Cairo',sans-serif" }}>
-              {editItem.id?"💾 حفظ":"➕ إضافة"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <div style={{ textAlign:"center", padding:40, color:"#94a3b8" }}>⏳ جاري التحميل...</div>
-      ) : items.length===0 ? (
-        <div style={{ textAlign:"center", padding:50, background:"#fff", borderRadius:14, border:"1.5px dashed #e2e8f0", color:"#94a3b8" }}>
-          <div style={{ fontSize:40, marginBottom:10 }}>🖼️</div>
-          <div style={{ fontWeight:700 }}>لا توجد صور بعد</div>
-        </div>
-      ) : (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:14 }}>
-          {items.map((item,idx)=>(
-            <div key={item.id} style={{ background:"#fff", borderRadius:14, overflow:"hidden", border:"1px solid #e8edf2", boxShadow:"0 2px 10px rgba(0,0,0,0.05)", position:"relative" }}>
-              <div style={{ position:"absolute", top:8, right:8, background:B, color:"#fff", width:24, height:24, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, zIndex:2 }}>{idx+1}</div>
-              <div style={{ height:150, overflow:"hidden" }}>
-                <img src={proxyImg(item.src)} alt={item.captionAr} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-              </div>
-              <div style={{ padding:"10px 12px" }}>
-                <div style={{ fontSize:11, color:G, fontWeight:700, background:`${G}15`, padding:"2px 8px", borderRadius:10, display:"inline-block", marginBottom:4 }}>{item.tag}</div>
-                <div style={{ fontSize:13, fontWeight:700, color:B }}>{item.captionAr}</div>
-                {item.captionEn && <div style={{ fontSize:11, color:"#94a3b8", direction:"ltr" }}>{item.captionEn}</div>}
-              </div>
-              <div style={{ display:"flex", gap:6, padding:"0 10px 10px" }}>
-                <button onClick={()=>{setEditItem({...item});setShowForm(true)}}
-                  style={{ flex:1, padding:"6px", borderRadius:8, border:`1px solid ${B}`, background:"#fff", color:B, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>✏️ تعديل</button>
-                <button onClick={()=>handleDelete(item.id)}
-                  style={{ flex:1, padding:"6px", borderRadius:8, border:`1px solid ${R}`, background:"#fff", color:R, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'Cairo',sans-serif" }}>🗑️ حذف</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ══════════════════════════════
    تاب 2 — شاشات التفاعل
@@ -464,8 +297,7 @@ export default function GalleryManager() {
         ))}
       </div>
       <div style={{ background:"#F8FAFC", borderRadius:16, border:"1px solid #e8edf2", padding:20 }}>
-        {activeTab==="media" ? <MediaCarouselTab showToast={showToast}/> : <InteractiveScreensTab showToast={showToast}/>}
-      </div>
+{activeTab==="media" ? <MediaManager showToast={showToast}/> : <InteractiveScreensTab showToast={showToast}/>}      </div>
       {toast && <Toast msg={toast.msg} ok={toast.ok}/>}
     </div>
   );
