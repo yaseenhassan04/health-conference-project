@@ -32,7 +32,20 @@ const WORKSHOP_DAYS = {
 };
 
 export default function WorkshopsDashboard() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({
+    total: 0,
+    oneWorkshop: 0,
+    twoWorkshops: 0,
+    workshopCounts: {
+      w1: { name: WORKSHOP_NAMES.w1, count: 0, capacity: 15, available: 15 },
+      w2: { name: WORKSHOP_NAMES.w2, count: 0, capacity: 15, available: 15 },
+      w3: { name: WORKSHOP_NAMES.w3, count: 0, capacity: 15, available: 15 },
+      w4: { name: WORKSHOP_NAMES.w4, count: 0, capacity: 15, available: 15 },
+      w5: { name: WORKSHOP_NAMES.w5, count: 0, capacity: 15, available: 15 },
+    },
+    specialtyCounts: {},
+    recent: []
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
@@ -43,12 +56,24 @@ export default function WorkshopsDashboard() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch("/api/register/workshops");
-      if (!res.ok) throw new Error("فشل تحميل البيانات");
+      // 🔥 تصحيح المسار إلى /api/registration/workshops
+      const res = await fetch("/api/registration/workshops");
+      if (!res.ok) throw new Error("فشل تحميل البيانات من السيرفر");
       const json = await res.json();
-      setData(json);
+      
+      if (json) {
+        setData({
+          total: json.total || 0,
+          oneWorkshop: json.oneWorkshop || 0,
+          twoWorkshops: json.twoWorkshops || 0,
+          workshopCounts: json.workshopCounts || data.workshopCounts,
+          specialtyCounts: json.specialtyCounts || {},
+          recent: json.recent || json.items || []
+        });
+      }
       setLastUpdated(new Date());
     } catch (err) {
+      console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -57,16 +82,16 @@ export default function WorkshopsDashboard() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const filteredRecent = data?.recent?.filter((r) => {
+  const filteredRecent = (data?.recent || []).filter((r) => {
     const matchSearch =
       !search ||
-      r.fullNameAr.includes(search) ||
-      r.fullNameEn.toLowerCase().includes(search.toLowerCase()) ||
-      r.email.toLowerCase().includes(search.toLowerCase()) ||
-      r.specialty.toLowerCase().includes(search.toLowerCase()) ||
-      r.workplace.includes(search);
+      (r.fullNameAr && r.fullNameAr.includes(search)) ||
+      (r.fullNameEn && r.fullNameEn.toLowerCase().includes(search.toLowerCase())) ||
+      (r.email && r.email.toLowerCase().includes(search.toLowerCase())) ||
+      (r.specialty && r.specialty.toLowerCase().includes(search.toLowerCase())) ||
+      (r.workplace && r.workplace.includes(search));
     const matchWorkshop =
-      filterWorkshop === "all" || r.workshops.includes(filterWorkshop);
+      filterWorkshop === "all" || (r.workshops && r.workshops.includes(filterWorkshop));
     return matchSearch && matchWorkshop;
   });
 
@@ -94,7 +119,7 @@ export default function WorkshopsDashboard() {
   );
 
   const totalCapacity = 75;
-  const fillPct = Math.round((data.total / totalCapacity) * 100);
+  const fillPct = Math.round(((data?.total || 0) / totalCapacity) * 100);
 
   return (
     <div style={s.page}>
@@ -169,13 +194,13 @@ export default function WorkshopsDashboard() {
             progress={Math.round((data.oneWorkshop / (data.total || 1)) * 100)}
           />
           <HeroCard
-            value={Object.values(data.workshopCounts).reduce((s, w) => s + w.available, 0)}
+            value={Object.values(data.workshopCounts || {}).reduce((s, w) => s + (w.available || 0), 0)}
             label="أماكن شاغرة"
             sub={`من أصل ${totalCapacity} مقعد إجمالاً`}
             icon="🎯"
             color="#7c3aed"
             gradient="linear-gradient(135deg, #7c3aed, #8b5cf6)"
-            progress={100 - fillPct}
+            progress={Math.max(0, 100 - fillPct)}
           />
         </div>
 
@@ -196,9 +221,11 @@ export default function WorkshopsDashboard() {
           </div>
 
           <div style={s.workshopGrid}>
-            {Object.entries(data.workshopCounts).map(([id, w]) => {
-              const pct = Math.round((w.count / w.capacity) * 100);
-              const isFull = w.count >= w.capacity;
+            {Object.entries(data.workshopCounts || {}).map(([id, w]) => {
+              const count = w.count || 0;
+              const capacity = w.capacity || 15;
+              const pct = Math.round((count / capacity) * 100);
+              const isFull = count >= capacity;
               const isAlmost = pct >= 70 && !isFull;
               const statusColor = isFull ? "#ef4444" : isAlmost ? "#f59e0b" : "#10b981";
               const statusLabel = isFull ? "امتلأت" : isAlmost ? "تقترب" : "متاح";
@@ -220,7 +247,7 @@ export default function WorkshopsDashboard() {
                     </div>
                   </div>
 
-                  <div style={s.wsCapName}>{w.name}</div>
+                  <div style={s.wsCapName}>{w.name || WORKSHOP_NAMES[id]}</div>
                   <div style={s.wsCapLead}>
                     <span style={{ marginLeft: 4 }}>👨‍⚕️</span>
                     {WORKSHOP_LEADS[id]}
@@ -243,10 +270,10 @@ export default function WorkshopsDashboard() {
                       }} />
                     </div>
                     <div style={s.wsProgressMeta}>
-                      <span style={{ fontWeight: 800, color: "#1e293b", fontSize: 15 }}>{w.count}</span>
-                      <span style={{ color: "#94a3b8", fontSize: 13 }}>/{w.capacity} مسجل</span>
+                      <span style={{ fontWeight: 800, color: "#1e293b", fontSize: 15 }}>{count}</span>
+                      <span style={{ color: "#94a3b8", fontSize: 13 }}>/{capacity} مسجل</span>
                       <span style={{ marginRight: "auto", fontSize: 12, color: statusColor, fontWeight: 700 }}>
-                        {w.available} متبقي
+                        {w.available ?? (capacity - count)} متبقي
                       </span>
                       <span style={{ fontSize: 12, color: "#94a3b8" }}>{pct}%</span>
                     </div>
@@ -257,7 +284,7 @@ export default function WorkshopsDashboard() {
           </div>
         </div>
 
-        {/* ── BOTTOM GRID: Specialty + Table ── */}
+        {/* ── BOTTOM GRID ── */}
         <div style={s.bottomGrid}>
 
           {/* Specialty Distribution */}
@@ -272,17 +299,17 @@ export default function WorkshopsDashboard() {
               </div>
             </div>
 
-            {Object.keys(data.specialtyCounts).length === 0 ? (
+            {Object.keys(data.specialtyCounts || {}).length === 0 ? (
               <div style={s.emptyState}>
                 <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
                 <div style={{ color: "#94a3b8", fontSize: 13 }}>لا توجد بيانات بعد</div>
               </div>
             ) : (
               <div style={s.specialtyList}>
-                {Object.entries(data.specialtyCounts)
+                {Object.entries(data.specialtyCounts || {})
                   .sort((a, b) => b[1] - a[1])
                   .map(([spec, count], i) => {
-                    const pct = Math.round((count / data.total) * 100);
+                    const pct = Math.round((count / (data.total || 1)) * 100);
                     const colors = ["#8B6F14","#2563eb","#059669","#7c3aed","#ef4444","#f59e0b","#0891b2","#db2777"];
                     const c = colors[i % colors.length];
                     return (
@@ -359,52 +386,46 @@ export default function WorkshopsDashboard() {
                   </thead>
                   <tbody>
                     {filteredRecent?.map((r, i) => (
-                      <tr key={r.id} style={s.trow} className="ws-row">
-                        <td style={{ ...s.td, color: "#94a3b8", fontWeight: 600, fontSize: 12 }}>{r.id}</td>
+                      <tr key={r.id || i} style={s.trow} className="ws-row">
+                        <td style={{ ...s.td, color: "#94a3b8", fontWeight: 600, fontSize: 12 }}>{r.id || (i + 1)}</td>
                         <td style={s.td}>
                           <div style={s.participantCell}>
-                            <div style={{ ...s.avatar, background: `hsl(${(r.id * 47) % 360}, 60%, 50%)` }}>
-                              {r.fullNameAr[0]}
+                            <div style={{ ...s.avatar, background: `hsl(${((r.id || i) * 47) % 360}, 60%, 50%)` }}>
+                              {r.fullNameAr ? r.fullNameAr[0] : "👤"}
                             </div>
                             <div>
-                              <div style={{ fontWeight: 700, color: "#1e293b", fontSize: 13 }}>{r.fullNameAr}</div>
-                              <div style={{ fontSize: 11, color: "#94a3b8", direction: "ltr" }}>{r.fullNameEn}</div>
+                              <div style={{ fontWeight: 700, color: "#1e293b", fontSize: 13 }}>{r.fullNameAr || "غير محدد"}</div>
+                              <div style={{ fontSize: 11, color: "#94a3b8", direction: "ltr" }}>{r.fullNameEn || ""}</div>
                             </div>
                           </div>
                         </td>
                         <td style={s.td}>
-                          <span style={s.specTag}>{r.specialty}</span>
+                          <span style={s.specTag}>{r.specialty || "عام"}</span>
                         </td>
                         <td style={{ ...s.td, fontSize: 12, color: "#475569", maxWidth: 140 }}>
                           <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {r.workplace}
+                            {r.workplace || "—"}
                           </div>
                         </td>
                         <td style={{ ...s.td, direction: "ltr", fontSize: 12, color: "#059669", fontWeight: 600 }}>
-                          {r.whatsapp}
+                          {r.whatsapp || r.phone || "—"}
                         </td>
                         <td style={s.td}>
                           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                            {r.workshops.map((wid) => (
+                            {Array.isArray(r.workshops) ? r.workshops.map((wid) => (
                               <span key={wid} style={{
                                 ...s.wTag,
                                 background: WORKSHOP_DAYS[wid] === "Day 1" ? "#eff6ff" : "#fdf4ff",
                                 color: WORKSHOP_DAYS[wid] === "Day 1" ? "#2563eb" : "#7c3aed",
                                 border: `1px solid ${WORKSHOP_DAYS[wid] === "Day 1" ? "#bfdbfe" : "#e9d5ff"}`,
                               }}>
-                                {wid.toUpperCase()}
+                                {String(wid).toUpperCase()}
                               </span>
-                            ))}
+                            )) : null}
                           </div>
                         </td>
                         <td style={{ ...s.td, fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                          {new Date(r.createdAt).toLocaleDateString("ar-EG", {
-                            month: "short", day: "numeric",
-                          })}
-                          <br />
-                          {new Date(r.createdAt).toLocaleTimeString("ar-EG", {
-                            hour: "2-digit", minute: "2-digit",
-                          })}
+                          {r.createdAt ? new Date(r.createdAt).toLocaleDateString("ar-EG", { month: "short", day: "numeric" }) : "—"}
                         </td>
                       </tr>
                     ))}
@@ -499,7 +520,7 @@ const s = {
     alignItems: "center",
     justifyContent: "space-between",
     padding: "16px 28px",
-  maxWidth: "100%",   // ← بدل 1400
+    maxWidth: "100%",
     margin: "0 auto",
     gap: 16,
     flexWrap: "wrap",
@@ -560,8 +581,7 @@ const s = {
     marginTop: 16,
   },
   content: {
-    maxWidth: 1400,
-  maxWidth: "100%",
+    maxWidth: "100%",
     padding: "28px 24px 48px",
     display: "flex",
     flexDirection: "column",
