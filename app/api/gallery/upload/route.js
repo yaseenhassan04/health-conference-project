@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { isAdminAuthorized } from '@/server/lib/adminAuth';
 import { ApiError } from '@/server/lib/apiError';
 import { uploadGalleryImage } from '@/server/services/gallery/blob.service';
+import { put } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,10 +23,13 @@ export async function POST(req) {
       return NextResponse.json({ error: 'لم يتم إرفاق أي ملف للرفع' }, { status: 400 });
     }
 
-    // 💡 رفع الملف سواء كان فيديو (.mov, .mp4) أو صورة
-    const result = await uploadGalleryImage({ file });
+    // 💡 رفع الملف سواء كان فيديو (.mov, .mp4) أو صورة مع إضافة لاحقة عشوائية لتجنب خطأ التكرار
+    const blob = await put(file.name, file, {
+      access: 'public',
+      addRandomSuffix: true,
+    });
     
-    return NextResponse.json(result);
+    return NextResponse.json({ url: blob.url });
   } catch (err) {
     if (err instanceof ApiError) {
       return NextResponse.json(err.body, { status: err.status });
