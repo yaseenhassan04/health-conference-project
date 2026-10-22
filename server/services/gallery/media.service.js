@@ -29,12 +29,14 @@ async function readDb() {
   }
 }
 
+// media.service.js
 async function writeDb(items) {
   try {
     await put(DB_BLOB_PATH, JSON.stringify({ items }, null, 2), {
       access: 'public',
       contentType: 'application/json',
-      addRandomSuffix: false, // مهم: نفس الاسم دائماً (يستبدل القديم)
+      addRandomSuffix: false,
+      allowOverwrite: true, // ← أضف هاد السطر
     });
   } catch (err) {
     console.error('❌ فشل كتابة البيانات:', err.message);
