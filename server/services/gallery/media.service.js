@@ -1,55 +1,59 @@
-import fs from 'fs';
-import path from 'path';
+import { put, list, del } from '@vercel/blob';
 import { ApiError } from '@/server/lib/apiError';
 
-const DB_PATH = path.join(process.cwd(), 'gallery-db.json');
+const DB_BLOB_PATH = 'gallery/db.json';
 
-// دالة قراءة قاعدة البيانات وتنظيفها من الملفات التالفة الناتجة عن المحاولات السابقة
-function readDb() {
+async function readDb() {
   try {
-    if (!fs.existsSync(DB_PATH)) return { items: [] };
-    const fileContent = fs.readFileSync(DB_PATH, 'utf8');
-    const data = JSON.parse(fileContent);
+    // ابحث عن الملف في الـ Blob
+    const { blobs } = await list({ prefix: DB_BLOB_PATH });
+    if (!blobs.length) return { items: [] };
 
-    let items = [];
-    if (data && Array.isArray(data.items)) {
-      items = data.items;
-    } else if (Array.isArray(data)) {
-      items = data;
-    }
+    const res = await fetch(blobs[0].url);
+    const data = await res.json();
 
-    // 🛡️ تنظيف تلقائي: حذف أي عنصر تالف لا يحتوي على رابط (src) صالح لمنع الشاشة البيضاء
-    const cleanItems = items.filter(
-      (item) => item && item.src && typeof item.src === 'string' && !item.src.startsWith('undefined') && item.src.trim() !== ''
+    let items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+
+    // تنظيف العناصر التالفة
+    items = items.filter(
+      (item) =>
+        item?.src &&
+        typeof item.src === 'string' &&
+        !item.src.startsWith('undefined') &&
+        item.src.trim() !== ''
     );
 
-    return { items: cleanItems };
+    return { items };
   } catch {
     return { items: [] };
   }
 }
 
-function writeDb(data) {
+async function writeDb(items) {
   try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+    await put(DB_BLOB_PATH, JSON.stringify({ items }, null, 2), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false, // مهم: نفس الاسم دائماً (يستبدل القديم)
+    });
   } catch (err) {
     console.error('❌ فشل كتابة البيانات:', err.message);
+    throw err;
   }
 }
 
-export function getGalleryMedia() {
+export async function getGalleryMedia() {
   return readDb();
 }
 
-export function addGalleryMedia(body) {
+export async function addGalleryMedia(body) {
   const finalUrl = body.url || body.imageUrl || body.image || body.link || body.src;
 
-  // 🛑 جدار حماية لمنع حفظ الروابط الفارغة أو التالفة التي تسبب شاشات بيضاء
   if (!finalUrl || typeof finalUrl !== 'string' || finalUrl.trim() === '' || finalUrl.startsWith('undefined')) {
     throw new ApiError(400, { error: 'فشل الرفع السحابي: الرابط المستلم غير صالح أو فارغ' });
   }
 
-  const db = readDb();
+  const db = await readDb();
   const newItem = {
     id: Date.now(),
     src: finalUrl,
@@ -65,46 +69,39 @@ export function addGalleryMedia(body) {
   };
 
   db.items.unshift(newItem);
-  writeDb(db);
+  await writeDb(db.items);
   return db;
 }
 
-// 💡 تعديل دالة الحذف: تحويل الطرفين إلى String للمقارنة الآمنة وحذف العنصر نهائياً
-export function deleteGalleryMedia({ id }) {
-  const db = readDb();
-  const initialCount = db.items.length;
-  
+export async function deleteGalleryMedia({ id }) {
+  const db = await readDb();
+  const before = db.items.length;
+
   db.items = db.items.filter((item) => String(item.id) !== String(id));
-  
-  if (db.items.length === initialCount) {
-    console.warn(`⚠️ لم يتم العثور على عنصر بالمُعرّف: ${id} للحذف`);
+
+  if (db.items.length === before) {
+    console.warn(`⚠️ لم يتم العثور على عنصر: ${id}`);
   }
 
-  writeDb(db);
+  await writeDb(db.items);
   return db;
 }
 
-// 💡 إضافة دالة التعديل والترتيب (PATCH) لضمان توافقها مع Route.js
-export function updateGalleryMedia({ id, patch }) {
-  const db = readDb();
+export async function updateGalleryMedia({ id, patch }) {
+  const db = await readDb();
   const index = db.items.findIndex((item) => String(item.id) === String(id));
 
   if (index === -1) {
     throw new ApiError(404, { error: 'العنصر المراد تعديله غير موجود' });
   }
 
-  // دمج البيانات التحديثية مع العنصر القديم
-  db.items[index] = {
-    ...db.items[index],
-    ...patch,
-  };
-
-  writeDb(db);
+  db.items[index] = { ...db.items[index], ...patch };
+  await writeDb(db.items);
   return { item: db.items[index], items: db.items };
 }
 
-export function saveGalleryScreenshot({ url, captionAr, captionEn, tag, tagEn }) {
-  const db = readDb();
+export async function saveGalleryScreenshot({ url, captionAr, captionEn, tag, tagEn }) {
+  const db = await readDb();
   db.items.unshift({
     id: Date.now(),
     src: url,
@@ -115,6 +112,6 @@ export function saveGalleryScreenshot({ url, captionAr, captionEn, tag, tagEn })
     category: 1,
     published: true,
   });
-  writeDb(db);
+  await writeDb(db.items);
   return { success: true };
 }

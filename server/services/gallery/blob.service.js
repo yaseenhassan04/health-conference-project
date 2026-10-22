@@ -6,9 +6,7 @@ export async function proxyBlobImage({ blobUrl }) {
     throw new ApiError(400, 'url مطلوب');
   }
 
-  // ✅ أضف التوكن كـ query parameter — هذي الطريقة الرسمية لـ Vercel private blobs
   const urlWithToken = `${blobUrl}?token=${process.env.BLOB_READ_WRITE_TOKEN}`;
-
   const response = await fetch(urlWithToken);
 
   if (!response.ok) {
@@ -28,24 +26,31 @@ export async function createSignedUrl({ blobUrl }) {
 
   const { url } = await getDownloadUrl(blobUrl, {
     token: process.env.BLOB_READ_WRITE_TOKEN,
-    expiresIn: 3600, // ساعة واحدة
+    expiresIn: 3600,
   });
 
   return { signedUrl: url };
 }
 
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+// 💡 توسيع الأنواع المسموحة لتشمل الصور والفيديوهات الكبيرة
+const ALLOWED_MEDIA_TYPES = [
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+  'video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'
+];
 
 export async function uploadGalleryImage({ file }) {
   if (!file || typeof file === 'string') {
     throw new ApiError(400, { error: 'لم يتم العثور على ملف مرفوع' });
   }
 
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-    throw new ApiError(400, { error: 'نوع الملف غير مدعوم' });
+  if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
+    throw new ApiError(400, { error: 'نوع الملف غير مدعوم. يرجى رفع صورة أو فيديو صالح.' });
   }
 
-  const filename = `${Date.now()}-${file.name}`;
+  // 💡 تحديد ما إذا كان الملف فيديو أم صورة لتخزينه بالمسار المناسب
+  const isVideo = file.type.startsWith('video/');
+  const folder = isVideo ? 'gallery/videos' : 'gallery/images';
+  const filename = `${folder}/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
 
   const blob = await put(filename, file, {
     access: 'public',
@@ -54,7 +59,6 @@ export async function uploadGalleryImage({ file }) {
 
   const generatedUrl = blob.url;
 
-  // 💡 الحل السحري: إرجاع الرابط بكل المسميات المحتملة التي قد يتوقعها الفرونت إند
   return {
     success: true,
     url: generatedUrl,
@@ -62,5 +66,6 @@ export async function uploadGalleryImage({ file }) {
     image: generatedUrl,
     link: generatedUrl,
     path: generatedUrl,
+    type: isVideo ? 'video' : 'image', // 💡 إرجاع النوع تلقائياً للداشبورد
   };
 }

@@ -31,7 +31,6 @@ const STAT_ICONS = ["🎤", "🔬", "👥", "🌍"];
 const STAT_COLORS = [R, B, "#0e7490", "#047857"];
 const TARGETS = { speakers: 20, sessions: 15, attendees: 1000, countries: 5 };
 
-/* ─── Category definitions for filtering (index 0 = All, 1..4 = category ids from dashboard) ─── */
 const MEDIA_CATEGORIES_AR = ["الكل", "المؤتمرات السابقة", "الورش الطبية", "الجولات الميدانية", "اللقطات التحضيرية"];
 const MEDIA_CATEGORIES_EN = ["All", "Past Conferences", "Medical Workshops", "Field Tours", "Prep Shots"];
 
@@ -162,7 +161,9 @@ function GalleryLightbox({ item, meta, onClose, onPrev, onNext, isRtl, isMobile,
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          position: "relative", maxWidth: "90vw", maxHeight: "70vh",
+          position: "relative",
+          width: "90vw",
+          maxHeight: "82vh",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
       >
@@ -171,7 +172,7 @@ function GalleryLightbox({ item, meta, onClose, onPrev, onNext, isRtl, isMobile,
             src={item.src}
             controls autoPlay playsInline
             style={{
-              maxWidth: "90vw", maxHeight: "65vh",
+              maxWidth: "88vw", maxHeight: "78vh",
               borderRadius: 14, boxShadow: "0 30px 80px rgba(0,0,0,0.6)",
               border: `2px solid ${G}40`,
             }}
@@ -181,7 +182,7 @@ function GalleryLightbox({ item, meta, onClose, onPrev, onNext, isRtl, isMobile,
             src={proxyImg(item.src)}
             alt={meta?.caption}
             style={{
-              maxWidth: "90vw", maxHeight: "65vh",
+              maxWidth: "88vw", maxHeight: "78vh",
               borderRadius: 14, boxShadow: "0 30px 80px rgba(0,0,0,0.6)",
               border: `2px solid ${G}40`,
               transform: `scale(${zoom})`,
@@ -300,7 +301,6 @@ export default function Home() {
   const [dragDelta, setDragDelta] = useState(0);
   const [videoOpen, setVideoOpen] = useState(false);
 
-  /* ✅ البيانات من الداشبورد فقط؛ الـ fallback يُستخدم عند فشل الشبكة فقط */
   const [mediaItems, setMediaItems] = useState([]);
   const [mediaLoaded, setMediaLoaded] = useState(false);
 
@@ -309,7 +309,7 @@ export default function Home() {
   const [orgCardIndex, setOrgCardIndex] = useState(0);
 
   /* Gallery enhancements state */
-  const [activeCategory, setActiveCategory] = useState(0); // 0 = All
+  const [activeCategory, setActiveCategory] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [mediaLikes, setMediaLikes] = useState({});
   const [mediaViews, setMediaViews] = useState({});
@@ -317,32 +317,26 @@ export default function Home() {
   const thumbStripRef = useRef(null);
 
   const MEDIA_CATEGORIES = isRtl ? MEDIA_CATEGORIES_AR : MEDIA_CATEGORIES_EN;
-/* 🚀 محاكاة زيادة المشاهدات والإعجابات تلقائياً بمرور الوقت */
+
+  /* Auto increment views/likes */
   useEffect(() => {
     if (!mediaItems.length) return;
-
     const interval = setInterval(() => {
-      // اختيار عنصر عشوائي من المعرض لزيادة تفاعله تلقائياً
       const randomIndex = Math.floor(Math.random() * mediaItems.length);
-
       setMediaViews(prev => ({
         ...prev,
-        [randomIndex]: (prev[randomIndex] || 100) + Math.floor(Math.random() * 3) + 1 // زيادة المشاهدات بنجاح
+        [randomIndex]: (prev[randomIndex] || 100) + Math.floor(Math.random() * 3) + 1,
       }));
-
-      // أحياناً نزيد الإعجابات بشكل خفيف لتبدو طبيعية ومتضاعفة
       if (Math.random() > 0.5) {
         setMediaLikes(prev => ({
           ...prev,
-          [randomIndex]: (prev[randomIndex] || 10) + 1
+          [randomIndex]: (prev[randomIndex] || 10) + 1,
         }));
       }
-    }, 20000); // تتضاعف وتزيد الأرقام تلقائياً كل 20 ثانية
-
+    }, 20000);
     return () => clearInterval(interval);
   }, [mediaItems]);
-  
-  /* ✅ التصنيف الحقيقي القادم من الداشبورد (category: 1..4) */
+
   const filteredMedia = useMemo(
     () =>
       activeCategory === 0
@@ -351,7 +345,6 @@ export default function Home() {
     [mediaItems, activeCategory],
   );
 
-  /* ✅ التسمية والوسم من بيانات العنصر نفسه (مع fallback للترجمة الثابتة) */
   const getMeta = useCallback(
     (item, idx) => ({
       caption:
@@ -366,10 +359,8 @@ export default function Home() {
     [isRtl, t],
   );
 
-  /* When filter changes, reset to first slide */
   useEffect(() => { setActiveSlide(0); }, [activeCategory]);
 
-  /* لو قلّ عدد العناصر (حذف) ولاحقاً الشريحة الحالية خارج النطاق */
   useEffect(() => {
     if (activeSlide >= filteredMedia.length && filteredMedia.length > 0) setActiveSlide(0);
   }, [filteredMedia.length]);
@@ -394,7 +385,7 @@ export default function Home() {
     }
   }, [activeSlide]);
 
-  /* Auto-scroll thumbnail strip to active */
+  /* Auto-scroll thumbnail strip */
   useEffect(() => {
     if (thumbStripRef.current) {
       const strip = thumbStripRef.current;
@@ -431,7 +422,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  /* ✅ جلب المعرض: بدون كاش، وقبول القائمة الفاضية */
   useEffect(() => {
     fetch("/api/gallery/media", { cache: "no-store" })
       .then((r) => r.json())
@@ -513,7 +503,6 @@ export default function Home() {
     return () => clearTimeout(tm);
   }, [lang]);
 
-  /* ✅ حماية من القائمة الفاضية (تفادي % 0) */
   useEffect(() => {
     if (filteredMedia.length === 0) return;
     autoPlay.current = setInterval(
@@ -533,7 +522,6 @@ export default function Home() {
     );
   };
 
-  /* Improved swipe with momentum */
   const swipeVelocity = useRef(0);
   const lastX = useRef(0);
   const lastTime = useRef(0);
@@ -1079,174 +1067,176 @@ export default function Home() {
 
           {/* ══════════════ GALLERY ══════════════ */}
           {mediaLoaded && mediaItems.length > 0 && (
-          <div data-reveal="gallery" style={{
-            ...rev("gallery", 0.05),
-            background: "#fff", borderRadius: isMobile ? 14 : 22,
-            overflow: "hidden", marginBottom: isMobile ? 14 : 32,
-            boxShadow: "0 4px 24px rgba(27,54,93,0.09)",
-            border: `1px solid ${G}30`,
-          }}>
-
-            {/* Gallery Header */}
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: isMobile ? "10px 14px" : "14px 20px",
-              borderBottom: `1px solid ${B}0c`,
-              background: "#FAFBFD", flexWrap: "wrap", gap: 8,
+            <div data-reveal="gallery" style={{
+              ...rev("gallery", 0.05),
+              background: "#fff", borderRadius: isMobile ? 14 : 22,
+              overflow: "hidden", marginBottom: isMobile ? 14 : 32,
+              boxShadow: "0 4px 24px rgba(27,54,93,0.09)",
+              border: `1px solid ${G}30`,
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
-                  width: isMobile ? 32 : 38, height: isMobile ? 32 : 38,
-                  borderRadius: 10, background: `${G}15`, border: `1px solid ${G}30`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: isMobile ? 16 : 18,
-                }}>🎞️</div>
-                <div>
-                  <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 900, color: B }}>
-                    {t.galleryTitle}
+
+              {/* Gallery Header */}
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: isMobile ? "10px 14px" : "14px 20px",
+                borderBottom: `1px solid ${B}0c`,
+                background: "#FAFBFD", flexWrap: "wrap", gap: 8,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{
+                    width: isMobile ? 32 : 38, height: isMobile ? 32 : 38,
+                    borderRadius: 10, background: `${G}15`, border: `1px solid ${G}30`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: isMobile ? 16 : 18,
+                  }}>🎞️</div>
+                  <div>
+                    <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 900, color: B }}>
+                      {t.galleryTitle}
+                    </div>
+                    {!isMobile && (
+                      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{t.gallerySub}</div>
+                    )}
                   </div>
-                  {!isMobile && (
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{t.gallerySub}</div>
-                  )}
                 </div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button
-                  onClick={() => setVideoOpen(true)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    padding: isMobile ? "5px 12px" : "7px 16px",
-                    background: `linear-gradient(135deg,${R},#a80d24)`,
-                    border: "none", borderRadius: 20, cursor: "pointer",
-                    fontFamily: "'Cairo',sans-serif",
-                    fontSize: isMobile ? 11 : 12.5, fontWeight: 800, color: "#fff",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.06)"; e.currentTarget.style.boxShadow = `0 6px 18px ${R}50`; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
-                >
-                  ▶ {t.videoLabel}
-                </button>
-                <div style={{
-                  fontSize: 11, fontWeight: 700, color: "#9A7A10",
-                  background: `${G}15`, border: `1px solid ${G}30`,
-                  padding: "4px 12px", borderRadius: 20, direction: "ltr",
-                }}>
-                  {filteredMedia.length ? activeSlide + 1 : 0}/{filteredMedia.length}
-                </div>
-              </div>
-            </div>
-
-            {/* Category Filter Tabs */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: isMobile ? "10px 12px 8px" : "12px 18px 10px",
-              overflowX: "auto", scrollbarWidth: "none",
-              background: "linear-gradient(to bottom,#FAFBFD,#fff)",
-              borderBottom: `1px solid ${B}08`,
-            }}>
-              {MEDIA_CATEGORIES.map((cat, ci) => {
-                const isActive = activeCategory === ci;
-                return (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <button
-                    key={ci}
-                    onClick={() => setActiveCategory(ci)}
+                    onClick={() => setVideoOpen(true)}
                     style={{
-                      flexShrink: 0,
-                      padding: isMobile ? "5px 12px" : "6px 16px",
-                      borderRadius: 30,
-                      border: isActive ? "none" : `1px solid ${B}18`,
-                      background: isActive
-                        ? `linear-gradient(135deg,${B},#2a4a7a)`
-                        : "#fff",
-                      color: isActive ? "#fff" : "#64748b",
-                      fontSize: isMobile ? 11 : 12,
-                      fontWeight: isActive ? 800 : 600,
-                      cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 5,
+                      padding: isMobile ? "5px 12px" : "7px 16px",
+                      background: `linear-gradient(135deg,${R},#a80d24)`,
+                      border: "none", borderRadius: 20, cursor: "pointer",
                       fontFamily: "'Cairo',sans-serif",
-                      transition: "all 0.22s",
-                      boxShadow: isActive ? `0 4px 12px ${B}30` : "none",
-                      transform: isActive ? "translateY(-1px)" : "none",
+                      fontSize: isMobile ? 11 : 12.5, fontWeight: 800, color: "#fff",
+                      transition: "transform 0.2s, box-shadow 0.2s",
                     }}
-                    onMouseEnter={e => {
-                      if (!isActive) e.currentTarget.style.background = `${B}08`;
-                    }}
-                    onMouseLeave={e => {
-                      if (!isActive) e.currentTarget.style.background = "#fff";
-                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.06)"; e.currentTarget.style.boxShadow = `0 6px 18px ${R}50`; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
                   >
-                    {cat}
+                    ▶ {t.videoLabel}
                   </button>
-                );
-              })}
-            </div>
-
-            {/* قسم فاضي */}
-            {filteredMedia.length === 0 && (
-              <div style={{ padding: "60px 20px", textAlign: "center", color: "#94a3b8", fontWeight: 700 }}>
-                <div style={{ fontSize: 40, marginBottom: 8 }}>🖼️</div>
-                {isRtl ? "لا توجد عناصر في هذا القسم" : "No items in this category"}
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, color: "#9A7A10",
+                    background: `${G}15`, border: `1px solid ${G}30`,
+                    padding: "4px 12px", borderRadius: 20, direction: "ltr",
+                  }}>
+                    {filteredMedia.length ? activeSlide + 1 : 0}/{filteredMedia.length}
+                  </div>
+                </div>
               </div>
-            )}
 
-            {/* Slider */}
-            {filteredMedia.length > 0 && (
-            <div
-              ref={sliderRef}
-              style={{ position: "relative", overflow: "hidden", userSelect: "none" }}
-              onMouseDown={e => onDragStart(e.clientX)}
-              onMouseMove={e => onDragMove(e.clientX)}
-              onMouseUp={onDragEnd}
-              onMouseLeave={onDragEnd}
-              onTouchStart={e => onDragStart(e.touches[0].clientX)}
-              onTouchMove={e => { e.preventDefault(); onDragMove(e.touches[0].clientX); }}
-              onTouchEnd={onDragEnd}
-            >
-              <div
-                className={`slide-track${isDragging ? " drag" : ""}`}
-                style={{ transform: slideTranslate }}
-              >
-                {filteredMedia.map((item, i) => {
-                  const realIdx = mediaItems.indexOf(item);
-                  const meta = getMeta(item, realIdx);
-                  const isVideoItem = item.type === "video";
+              {/* Category Filter Tabs */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: isMobile ? "10px 12px 8px" : "12px 18px 10px",
+                overflowX: "auto", scrollbarWidth: "none",
+                background: "linear-gradient(to bottom,#FAFBFD,#fff)",
+                borderBottom: `1px solid ${B}08`,
+              }}>
+                {MEDIA_CATEGORIES.map((cat, ci) => {
+                  const isActive = activeCategory === ci;
                   return (
-                    <div key={item.id ?? i} style={{
-                      minWidth: "100%", height: SLIDE_H,
-                      position: "relative", flexShrink: 0,
-                      background: `linear-gradient(135deg,${G}12,#EBF0F8)`,
-                    }}>
-                      {isVideoItem ? (
+                    <button
+                      key={ci}
+                      onClick={() => setActiveCategory(ci)}
+                      style={{
+                        flexShrink: 0,
+                        padding: isMobile ? "5px 12px" : "6px 16px",
+                        borderRadius: 30,
+                        border: isActive ? "none" : `1px solid ${B}18`,
+                        background: isActive ? `linear-gradient(135deg,${B},#2a4a7a)` : "#fff",
+                        color: isActive ? "#fff" : "#64748b",
+                        fontSize: isMobile ? 11 : 12,
+                        fontWeight: isActive ? 800 : 600,
+                        cursor: "pointer",
+                        fontFamily: "'Cairo',sans-serif",
+                        transition: "all 0.22s",
+                        boxShadow: isActive ? `0 4px 12px ${B}30` : "none",
+                        transform: isActive ? "translateY(-1px)" : "none",
+                      }}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = `${B}08`; }}
+                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "#fff"; }}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Empty state */}
+              {filteredMedia.length === 0 && (
+                <div style={{ padding: "60px 20px", textAlign: "center", color: "#94a3b8", fontWeight: 700 }}>
+                  <div style={{ fontSize: 40, marginBottom: 8 }}>🖼️</div>
+                  {isRtl ? "لا توجد عناصر في هذا القسم" : "No items in this category"}
+                </div>
+              )}
+
+              {/* Slider */}
+              {filteredMedia.length > 0 && (
+                <div
+                  ref={sliderRef}
+                  style={{ position: "relative", overflow: "hidden", userSelect: "none" }}
+                  onMouseDown={e => onDragStart(e.clientX)}
+                  onMouseMove={e => onDragMove(e.clientX)}
+                  onMouseUp={onDragEnd}
+                  onMouseLeave={onDragEnd}
+                  onTouchStart={e => onDragStart(e.touches[0].clientX)}
+                  onTouchMove={e => { e.preventDefault(); onDragMove(e.touches[0].clientX); }}
+                  onTouchEnd={onDragEnd}
+                >
+                  <div
+                    className={`slide-track${isDragging ? " drag" : ""}`}
+                    style={{ transform: slideTranslate }}
+                  >
+                    {filteredMedia.map((item, i) => {
+                      const realIdx = mediaItems.indexOf(item);
+                      const meta = getMeta(item, realIdx);
+                      const isVideoItem = item.type === "video";
+                      return (
+                        <div key={item.id ?? i} style={{
+                          minWidth: "100%",
+                          position: "relative",
+                          flexShrink: 0,
+                          background: "#000",
+                          minHeight: isMobile ? 200 : 260,
+                          maxHeight: "80vh",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          overflow: "hidden",
+                        }}>
+                         {isVideoItem ? (
   <div style={{ width: "100%", height: "100%", position: "relative", background: "#000" }}>
     <video
       src={item.src}
       autoPlay
-      muted
       playsInline
       controls
       preload="auto"
+      ref={(videoEl) => {
+        if (videoEl) {
+          // محاولة التشغيل بدون كتم، وإذا حظره المتصفح يتم تجاوزه بسلاسة
+          videoEl.play().catch(() => {
+            videoEl.muted = true;
+            videoEl.play();
+          });
+        }
+      }}
       style={{
         width: "100%",
         height: "100%",
         objectFit: "cover",
         display: "block",
       }}
-      onEnded={() => {
-        goTo(activeSlide + 1);
-      }}
+      onEnded={() => goTo(activeSlide + 1)}
     />
-    
-    {/* زر علوي عائم لتكبير الفيديو وفتحه في الـ Lightbox مع الصوت الكامل */}
     <button
-      onClick={(e) => {
-        e.stopPropagation();
-        openLightbox(i);
-      }}
+      onClick={(e) => { e.stopPropagation(); openLightbox(i); }}
       style={{
         position: "absolute",
         top: 12,
         [isRtl ? "left" : "right"]: 12,
-        background: "rgba(0, 0, 0, 0.7)",
+        background: "rgba(0,0,0,0.7)",
         color: "#fff",
         border: `1.5px solid ${G}`,
         borderRadius: 20,
@@ -1266,217 +1256,260 @@ export default function Home() {
     </button>
   </div>
 ) : (
-  <img
-    src={proxyImg(item.src)}
-    alt={meta.caption}
-    draggable={false}
-    onClick={() => openLightbox(i)}
-    style={{
-      width: "100%", height: "100%", objectFit: "cover",
-      display: "block", pointerEvents: "auto", cursor: "zoom-in",
-    }}
-    onError={(e) => {
-      e.currentTarget.style.display = "none";
-      const p = e.currentTarget.parentElement;
-      const d = document.createElement("div");
-      d.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;";
-      d.innerHTML = `<span style="font-size:48px">🏥</span><span style="color:${B};font-size:15px;font-weight:700;">${meta.caption}</span>`;
-      p.appendChild(d);
-    }}
-  />
-)}
-                      <div style={{
-                        position: "absolute", inset: 0,
-                        background: "linear-gradient(to bottom,transparent 50%,rgba(27,54,93,0.6))",
-                        pointerEvents: "none",
-                      }} />
-
-                      {/* Tag */}
-                      {meta.tag && (
-                        <div style={{
-                          position: "absolute", top: 12,
-                          [isRtl ? "right" : "left"]: 12,
-                          background: G, color: B,
-                          fontSize: 11, fontWeight: 900,
-                          padding: "4px 12px", borderRadius: 30,
-                        }}>
-                          {meta.tag}
-                        </div>
-                      )}
-
-                      {/* Video badge */}
-                      {isVideoItem && (
-                        <div style={{
-                          position: "absolute", top: 12,
-                          [isRtl ? "left" : "right"]: 12,
-                          background: R, color: "#fff",
-                          fontSize: 10, fontWeight: 900,
-                          padding: "3px 10px", borderRadius: 30,
-                          display: "flex", alignItems: "center", gap: 4,
-                        }}>
-                          🎬 {isRtl ? "فيديو" : "Video"}
-                        </div>
-                      )}
-
-                      {/* Bottom caption + actions */}
-                      <div style={{
-                        position: "absolute", bottom: 0, left: 0, right: 0,
-                        padding: isMobile ? "20px 16px 12px" : "32px 26px 18px",
-                        animation: i === activeSlide ? "slide-caption 0.55s cubic-bezier(0.22,1,0.36,1) both" : "none",
-                      }}>
-                        <div style={{
-                          fontSize: isMobile ? 13 : 16, fontWeight: 800, color: "#fff",
-                          textShadow: "0 2px 8px rgba(0,0,0,0.4)",
-                        }}>
-                          {meta.caption}
-                        </div>
-
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            {filteredMedia.map((_, di) => (
-                              <div key={di} style={{
-                                width: di === i ? 18 : 6, height: 6, borderRadius: 4,
-                                background: di === i ? G : "rgba(255,255,255,0.4)",
-                                transition: "all .35s",
-                              }} />
-                            ))}
-                          </div>
-
-                          {i === activeSlide && (
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 600 }}>
-                                👁 {mediaViews[realIdx] || 0}
-                              </span>
-                              <button
-                                onClick={e => { e.stopPropagation(); handleLike(realIdx); }}
+  <div style={{
+    position: "relative",
+    width: "100%",
+    minHeight: isMobile ? 200 : 260,
+    maxHeight: "80vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    background: "#000",
+  }}>
+                              {/* Blurred background */}
+                              <img
+                                src={proxyImg(item.src)}
+                                alt=""
+                                aria-hidden
                                 style={{
-                                  background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
-                                  borderRadius: 20, color: "#fff", cursor: "pointer",
-                                  fontSize: 11, fontWeight: 700, padding: "3px 10px",
-                                  display: "flex", alignItems: "center", gap: 4,
-                                  fontFamily: "'Cairo',sans-serif",
-                                  transition: "transform 0.2s, background 0.2s",
+                                  position: "absolute",
+                                  inset: 0,
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                  filter: "blur(18px) brightness(0.4) saturate(1.2)",
+                                  transform: "scale(1.05)",
+                                  pointerEvents: "none",
+                                  userSelect: "none",
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.background = "rgba(248,113,113,0.4)"}
-                                onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
-                              >
-                                ❤️ {mediaLikes[realIdx] || 0}
-                              </button>
+                              />
+                              {/* Actual image */}
+                              <img
+                                src={proxyImg(item.src)}
+                                alt={meta.caption}
+                                draggable={false}
+                                onClick={() => openLightbox(i)}
+                                style={{
+                                  position: "relative",
+                                  maxWidth: "100%",
+                                  maxHeight: "80vh",
+                                  width: "auto",
+                                  height: "auto",
+                                  objectFit: "contain",
+                                  display: "block",
+                                  cursor: "zoom-in",
+                                  zIndex: 1,
+                                }}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  const p = e.currentTarget.parentElement;
+                                  const d = document.createElement("div");
+                                  d.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:2;";
+                                  d.innerHTML = `<span style="font-size:48px">🏥</span><span style="color:#fff;font-size:15px;font-weight:700;">${meta.caption}</span>`;
+                                  p.appendChild(d);
+                                }}
+                              />
                             </div>
                           )}
+
+                          {/* Gradient overlay */}
+                          <div style={{
+                            position: "absolute", inset: 0,
+                            background: "linear-gradient(to bottom,transparent 50%,rgba(27,54,93,0.6))",
+                            pointerEvents: "none",
+                            zIndex: 2,
+                          }} />
+
+                          {/* Tag */}
+                          {meta.tag && (
+                            <div style={{
+                              position: "absolute", top: 12,
+                              [isRtl ? "right" : "left"]: 12,
+                              background: G, color: B,
+                              fontSize: 11, fontWeight: 900,
+                              padding: "4px 12px", borderRadius: 30,
+                              zIndex: 3,
+                            }}>
+                              {meta.tag}
+                            </div>
+                          )}
+
+                          {/* Video badge */}
+                          {isVideoItem && (
+                            <div style={{
+                              position: "absolute", top: 12,
+                              [isRtl ? "left" : "right"]: 12,
+                              background: R, color: "#fff",
+                              fontSize: 10, fontWeight: 900,
+                              padding: "3px 10px", borderRadius: 30,
+                              display: "flex", alignItems: "center", gap: 4,
+                              zIndex: 3,
+                            }}>
+                              🎬 {isRtl ? "فيديو" : "Video"}
+                            </div>
+                          )}
+
+                          {/* Bottom caption + actions */}
+                          <div style={{
+                            position: "absolute", bottom: 0, left: 0, right: 0,
+                            padding: isMobile ? "20px 16px 12px" : "32px 26px 18px",
+                            animation: i === activeSlide ? "slide-caption 0.55s cubic-bezier(0.22,1,0.36,1) both" : "none",
+                            zIndex: 3,
+                          }}>
+                            <div style={{
+                              fontSize: isMobile ? 13 : 16, fontWeight: 800, color: "#fff",
+                              textShadow: "0 2px 8px rgba(0,0,0,0.4)",
+                            }}>
+                              {meta.caption}
+                            </div>
+
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                {filteredMedia.map((_, di) => (
+                                  <div key={di} style={{
+                                    width: di === i ? 18 : 6, height: 6, borderRadius: 4,
+                                    background: di === i ? G : "rgba(255,255,255,0.4)",
+                                    transition: "all .35s",
+                                  }} />
+                                ))}
+                              </div>
+
+                              {i === activeSlide && (
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 600 }}>
+                                    👁 {mediaViews[realIdx] || 0}
+                                  </span>
+                                  <button
+                                    onClick={e => { e.stopPropagation(); handleLike(realIdx); }}
+                                    style={{
+                                      background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)",
+                                      borderRadius: 20, color: "#fff", cursor: "pointer",
+                                      fontSize: 11, fontWeight: 700, padding: "3px 10px",
+                                      display: "flex", alignItems: "center", gap: 4,
+                                      fontFamily: "'Cairo',sans-serif",
+                                      transition: "transform 0.2s, background 0.2s",
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = "rgba(248,113,113,0.4)"}
+                                    onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.15)"}
+                                  >
+                                    ❤️ {mediaLikes[realIdx] || 0}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                  </div>
 
-              {/* Arrow buttons */}
-              {[
-                { s: "left", d: isRtl ? +1 : -1, c: "‹" },
-                { s: "right", d: isRtl ? -1 : +1, c: "›" },
-              ].map((btn) => (
-                <button key={btn.s} className="slider-arrow"
-                  onClick={() => goTo(activeSlide + btn.d)}
-                  style={{ [btn.s]: isMobile ? 8 : 16, width: isMobile ? 36 : 48, height: isMobile ? 36 : 48, fontSize: isMobile ? 20 : 24 }}
-                >
-                  {btn.c}
-                </button>
-              ))}
-
-              {/* Progress bar */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: `${B}15`, zIndex: 5 }}>
-                <div key={activeSlide} style={{
-                  height: "100%",
-                  background: `linear-gradient(90deg,${G},${R})`,
-                  animation: "progress-bar 5s linear",
-                }} />
-              </div>
-            </div>
-            )}
-
-            {/* Thumbnail Strip */}
-            {!isMobile && filteredMedia.length > 0 && (
-              <div
-                ref={thumbStripRef}
-                style={{
-                  display: "flex", gap: 8,
-                  padding: "12px 16px",
-                  overflowX: "auto", background: "#F4F6FA",
-                  scrollbarWidth: "thin",
-                  scrollbarColor: `${G}50 transparent`,
-                  borderTop: `1px solid ${B}08`,
-                  scrollBehavior: "smooth",
-                }}
-              >
-                {filteredMedia.map((item, i) => {
-                  const realIdx = mediaItems.indexOf(item);
-                  const meta = getMeta(item, realIdx);
-                  const isActive = i === activeSlide;
-                  const isHovered = hoveredThumb === i;
-                  return (
-                    <div
-                      key={item.id ?? i}
-                      className={`thumb-item${isActive ? " active" : ""}`}
-                      onClick={() => goTo(i)}
-                      onMouseEnter={() => setHoveredThumb(i)}
-                      onMouseLeave={() => setHoveredThumb(null)}
-                      style={{
-                        position: "relative",
-                        width: 88, height: 60, flexShrink: 0,
-                        borderRadius: 10, overflow: "hidden",
-                        cursor: "pointer",
-                        border: isActive
-                          ? `2.5px solid ${G}`
-                          : isHovered
-                            ? `2px solid ${B}50`
-                            : "2px solid transparent",
-                        boxShadow: isActive
-                          ? `0 4px 16px ${G}50`
-                          : isHovered
-                            ? "0 4px 12px rgba(0,0,0,0.2)"
-                            : "0 2px 6px rgba(0,0,0,0.1)",
-                        transform: isActive ? "scale(1.08)" : isHovered ? "scale(1.04)" : "scale(1)",
-                        transition: "all 0.25s cubic-bezier(0.22,1,0.36,1)",
-                        opacity: isActive ? 1 : isHovered ? 0.9 : 0.7,
-                        background: "#1B365D",
-                      }}
+                  {/* Arrow buttons */}
+                  {[
+                    { s: "left", d: isRtl ? +1 : -1, c: "‹" },
+                    { s: "right", d: isRtl ? -1 : +1, c: "›" },
+                  ].map((btn) => (
+                    <button key={btn.s} className="slider-arrow"
+                      onClick={() => goTo(activeSlide + btn.d)}
+                      style={{ [btn.s]: isMobile ? 8 : 16, width: isMobile ? 36 : 48, height: isMobile ? 36 : 48, fontSize: isMobile ? 20 : 24 }}
                     >
-                      {(item.type !== "video" || item.thumbnail) && (
-                        <img
-                          src={proxyImg(item.type === "video" ? item.thumbnail : item.src)}
-                          alt={meta.caption || ""}
-                          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
-                          onError={e => { e.currentTarget.style.display = "none"; }}
-                        />
-                      )}
-                      {item.type === "video" && (
-                        <div style={{
-                          position: "absolute", inset: 0,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          background: "rgba(0,0,0,0.3)",
-                        }}>
-                          <span style={{ fontSize: 18, color: "#fff" }}>▶</span>
-                        </div>
-                      )}
-                      {(mediaLikes[realIdx] || 0) > 0 && (
-                        <div style={{
-                          position: "absolute", bottom: 3, right: 3,
-                          background: "rgba(0,0,0,0.6)", borderRadius: 8,
-                          fontSize: 8, color: "#fff", padding: "1px 5px", fontWeight: 700,
-                        }}>
-                          ❤ {mediaLikes[realIdx]}
-                        </div>
-                      )}
-                      {isActive && (
-                        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: G }} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                      {btn.c}
+                    </button>
+                  ))}
+
+                  {/* Progress bar */}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: `${B}15`, zIndex: 5 }}>
+                    <div key={activeSlide} style={{
+                      height: "100%",
+                      background: `linear-gradient(90deg,${G},${R})`,
+                      animation: "progress-bar 5s linear",
+                    }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Thumbnail Strip */}
+              {!isMobile && filteredMedia.length > 0 && (
+                <div
+                  ref={thumbStripRef}
+                  style={{
+                    display: "flex", gap: 8,
+                    padding: "12px 16px",
+                    overflowX: "auto", background: "#F4F6FA",
+                    scrollbarWidth: "thin",
+                    scrollbarColor: `${G}50 transparent`,
+                    borderTop: `1px solid ${B}08`,
+                    scrollBehavior: "smooth",
+                  }}
+                >
+                  {filteredMedia.map((item, i) => {
+                    const realIdx = mediaItems.indexOf(item);
+                    const meta = getMeta(item, realIdx);
+                    const isActive = i === activeSlide;
+                    const isHovered = hoveredThumb === i;
+                    return (
+                      <div
+                        key={item.id ?? i}
+                        className={`thumb-item${isActive ? " active" : ""}`}
+                        onClick={() => goTo(i)}
+                        onMouseEnter={() => setHoveredThumb(i)}
+                        onMouseLeave={() => setHoveredThumb(null)}
+                        style={{
+                          position: "relative",
+                          width: 88, height: 60, flexShrink: 0,
+                          borderRadius: 10, overflow: "hidden",
+                          cursor: "pointer",
+                          border: isActive
+                            ? `2.5px solid ${G}`
+                            : isHovered
+                              ? `2px solid ${B}50`
+                              : "2px solid transparent",
+                          boxShadow: isActive
+                            ? `0 4px 16px ${G}50`
+                            : isHovered
+                              ? "0 4px 12px rgba(0,0,0,0.2)"
+                              : "0 2px 6px rgba(0,0,0,0.1)",
+                          transform: isActive ? "scale(1.08)" : isHovered ? "scale(1.04)" : "scale(1)",
+                          transition: "all 0.25s cubic-bezier(0.22,1,0.36,1)",
+                          opacity: isActive ? 1 : isHovered ? 0.9 : 0.7,
+                          background: "#1B365D",
+                        }}
+                      >
+                        {(item.type !== "video" || item.thumbnail) && (
+                          <img
+                            src={proxyImg(item.type === "video" ? item.thumbnail : item.src)}
+                            alt={meta.caption || ""}
+                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
+                            onError={e => { e.currentTarget.style.display = "none"; }}
+                          />
+                        )}
+                        {item.type === "video" && (
+                          <div style={{
+                            position: "absolute", inset: 0,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: "rgba(0,0,0,0.3)",
+                          }}>
+                            <span style={{ fontSize: 18, color: "#fff" }}>▶</span>
+                          </div>
+                        )}
+                        {(mediaLikes[realIdx] || 0) > 0 && (
+                          <div style={{
+                            position: "absolute", bottom: 3, right: 3,
+                            background: "rgba(0,0,0,0.6)", borderRadius: 8,
+                            fontSize: 8, color: "#fff", padding: "1px 5px", fontWeight: 700,
+                          }}>
+                            ❤ {mediaLikes[realIdx]}
+                          </div>
+                        )}
+                        {isActive && (
+                          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: G }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
           {/* SidebarLeft on mobile/tablet */}

@@ -79,14 +79,53 @@ function DropZone({ onFiles, accept = "*/*", multiple = false, label }) {
   );
 }
 
-function Thumb({ item, height = 150 }) {
-  const style = { width: "100%", height, objectFit: "cover", display: "block", background: "#e2e8f0" };
-  if (item.type === "video") {
-    return item.thumbnail
-      ? <img src={proxyImg(item.thumbnail)} alt="" style={style} />
-      : <video src={item.src} preload="metadata" muted style={style} />;
-  }
-  return <img src={proxyImg(item.src)} alt={item.captionAr || ""} style={style} />;
+function Thumb({ item }) {
+  return (
+    <div style={{
+      width: "100%",
+      background: "#0d1b2a",
+      position: "relative",
+      overflow: "hidden",
+      // aspect-ratio افتراضي 16:9، لكن الصورة نفسها تتحكم بالارتفاع الفعلي
+      minHeight: 120,
+      maxHeight: 220,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}>
+      {/* blurred background */}
+      {item.type !== "video" && (
+        <img src={proxyImg(item.src)} alt="" aria-hidden style={{
+          position: "absolute", inset: 0,
+          width: "100%", height: "100%",
+          objectFit: "cover",
+          filter: "blur(12px) brightness(0.35)",
+          transform: "scale(1.05)",
+          pointerEvents: "none",
+        }} />
+      )}
+      {item.type === "video" ? (
+        item.thumbnail
+          ? <img src={proxyImg(item.thumbnail)} alt="" style={{ position: "relative", maxWidth: "100%", maxHeight: 220, objectFit: "contain", zIndex: 1 }} />
+          : <video src={item.src} preload="metadata" muted style={{ position: "relative", maxWidth: "100%", maxHeight: 220, objectFit: "contain", zIndex: 1 }} />
+      ) : (
+        <img
+          src={proxyImg(item.src)}
+          alt={item.captionAr || ""}
+          style={{
+            position: "relative",
+            maxWidth: "100%",
+            maxHeight: 220,
+            width: "auto",
+            height: "auto",
+            objectFit: "contain",
+            display: "block",
+            zIndex: 1,
+          }}
+        />
+      )}
+    </div>
+  );
 }
 
 const EMPTY = {
