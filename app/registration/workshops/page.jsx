@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,766 +11,560 @@ const WORKSHOP_NAMES = {
   w5: "POCUS",
 };
 
-const WORKSHOP_LEADS = {
-  w1: "Dr. Fahad Alhadad",
-  w2: "Dr. Ahmed Abu Taha",
-  w3: "Dr. Abedesalam Alashgar",
-  w4: "Dr. Mahmoud Sheikh Ali",
-  w5: "Dr. Mohammed Qandil",
-};
-
-const WORKSHOP_TIMES = {
-  w1: "08:00 – 10:00",
-  w2: "10:00 – 12:00",
-  w3: "12:00 – 14:00",
-  w4: "08:00 – 10:00",
-  w5: "10:00 – 13:00",
-};
-
-const WORKSHOP_DAYS = {
-  w1: "Day 1", w2: "Day 1", w3: "Day 1",
-  w4: "Day 2", w5: "Day 2",
-};
+const GOLD = "#8B6F14";
+const GOLD_LIGHT = "#C9A227";
+const DARK_BROWN = "#5B4A2A";
+const BEIGE = "#E8E4D9";
+const CHARCOAL = "#1A1A1A";
+const OFF_WHITE = "#FAFAF8";
 
 export default function WorkshopsDashboard() {
-  const [data, setData] = useState({
-    total: 0,
-    oneWorkshop: 0,
-    twoWorkshops: 0,
-    workshopCounts: {
-      w1: { name: WORKSHOP_NAMES.w1, count: 0, capacity: 15, available: 15 },
-      w2: { name: WORKSHOP_NAMES.w2, count: 0, capacity: 15, available: 15 },
-      w3: { name: WORKSHOP_NAMES.w3, count: 0, capacity: 15, available: 15 },
-      w4: { name: WORKSHOP_NAMES.w4, count: 0, capacity: 15, available: 15 },
-      w5: { name: WORKSHOP_NAMES.w5, count: 0, capacity: 15, available: 15 },
-    },
-    specialtyCounts: {},
-    recent: []
-  });
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [filterWorkshop, setFilterWorkshop] = useState("all");
-  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      // 🔥 تصحيح المسار إلى /api/registration/workshops
       const res = await fetch("/api/registration/workshops");
-      if (!res.ok) throw new Error("فشل تحميل البيانات من السيرفر");
+      if (!res.ok) throw new Error("فشل تحميل البيانات");
       const json = await res.json();
-      
-      if (json) {
-        setData({
-          total: json.total || 0,
-          oneWorkshop: json.oneWorkshop || 0,
-          twoWorkshops: json.twoWorkshops || 0,
-          workshopCounts: json.workshopCounts || data.workshopCounts,
-          specialtyCounts: json.specialtyCounts || {},
-          recent: json.recent || json.items || []
-        });
-      }
-      setLastUpdated(new Date());
+      setData(json);
     } catch (err) {
-      console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const filteredRecent = (data?.recent || []).filter((r) => {
+  const filteredRecent = data?.recent?.filter((r) => {
     const matchSearch =
       !search ||
-      (r.fullNameAr && r.fullNameAr.includes(search)) ||
-      (r.fullNameEn && r.fullNameEn.toLowerCase().includes(search.toLowerCase())) ||
-      (r.email && r.email.toLowerCase().includes(search.toLowerCase())) ||
-      (r.specialty && r.specialty.toLowerCase().includes(search.toLowerCase())) ||
-      (r.workplace && r.workplace.includes(search));
+      r.fullNameAr.includes(search) ||
+      r.fullNameEn.toLowerCase().includes(search.toLowerCase()) ||
+      r.email.toLowerCase().includes(search.toLowerCase()) ||
+      r.specialty.toLowerCase().includes(search.toLowerCase());
+
     const matchWorkshop =
-      filterWorkshop === "all" || (r.workshops && r.workshops.includes(filterWorkshop));
+      filterWorkshop === "all" || r.workshops.includes(filterWorkshop);
+
     return matchSearch && matchWorkshop;
   });
 
-  if (loading) return (
-    <div style={s.loadingPage}>
-      <div style={s.loadingCard}>
-        <div style={s.loadingSpinWrap}>
-          <div style={s.loadingRing} />
-          <span style={s.loadingIcon}>📝</span>
-        </div>
-        <div style={s.loadingTitle}>جاري تحميل البيانات</div>
-        <div style={s.loadingSubtitle}>ورشات العمل — المؤتمر الثاني عشر</div>
+  if (loading) {
+    return (
+      <div style={styles.loadingWrap}>
+        <div style={styles.spinner} />
+        <p style={{ color: DARK_BROWN, marginTop: "16px" }}>جاري تحميل البيانات...</p>
       </div>
-    </div>
-  );
+    );
+  }
 
-  if (error) return (
-    <div style={s.loadingPage}>
-      <div style={{ ...s.loadingCard, maxWidth: 360 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>{error}</div>
-        <button onClick={fetchData} style={s.primaryBtn}>↺ إعادة المحاولة</button>
+  if (error) {
+    return (
+      <div style={styles.loadingWrap}>
+        <p style={{ color: "#C0392B", fontSize: "16px" }}>⚠️ {error}</p>
+        <button onClick={fetchData} style={styles.retryBtn}>إعادة المحاولة</button>
       </div>
-    </div>
-  );
-
-  const totalCapacity = 75;
-  const fillPct = Math.round(((data?.total || 0) / totalCapacity) * 100);
+    );
+  }
 
   return (
-    <div style={s.page}>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-        .ws-row:hover { background: #f8fafc !important; }
-        .ws-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(139,111,20,0.12) !important; }
-        .action-btn:hover { opacity: 0.85; transform: scale(0.98); }
-        input:focus, select:focus { border-color: #8B6F14 !important; box-shadow: 0 0 0 3px rgba(139,111,20,0.1) !important; outline: none; }
-      `}</style>
+    <div style={styles.page}>
 
-      {/* ── TOP HEADER BAR ── */}
-      <div style={s.topBar}>
-        <div style={s.topBarInner}>
-          <div style={s.topBarLeft}>
-            <div style={s.breadcrumb}>
-              <span style={s.breadHome}>Dashboard</span>
-              <span style={s.breadSep}>/</span>
-              <span style={s.breadCurrent}>ورشات العمل</span>
-            </div>
-            <h1 style={s.pageTitle}>إحصائيات التسجيل في الورشات</h1>
-            {lastUpdated && (
-              <div style={s.lastUpdated}>
-                آخر تحديث: {lastUpdated.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}
+      {/* Header */}
+      <div style={styles.header}>
+        <div>
+          <div style={styles.headerSub}>Dashboard · ورشات العمل</div>
+          <h1 style={styles.headerTitle}>إحصائيات التسجيل</h1>
+        </div>
+        <button onClick={fetchData} style={styles.refreshBtn}>
+          ↻ تحديث
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div style={styles.statsGrid}>
+        <StatCard
+          label="إجمالي المسجلين"
+          value={data.total}
+          sub="من أصل 75 مقعد"
+          color={GOLD}
+        />
+        <StatCard
+          label="سجّلوا ورشتين"
+          value={data.twoWorkshops}
+          sub={`${Math.round((data.twoWorkshops / (data.total || 1)) * 100)}% من المسجلين`}
+          color="#2E7D32"
+        />
+        <StatCard
+          label="سجّلوا ورشة واحدة"
+          value={data.oneWorkshop}
+          sub={`${Math.round((data.oneWorkshop / (data.total || 1)) * 100)}% من المسجلين`}
+          color="#1565C0"
+        />
+        <StatCard
+          label="الأماكن المتبقية"
+          value={Object.values(data.workshopCounts).reduce((s, w) => s + w.available, 0)}
+          sub="مجموع الأماكن الشاغرة"
+          color="#6A1B9A"
+        />
+      </div>
+
+      {/* Workshop Capacity */}
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>سعة الورشات</h2>
+        <div style={styles.workshopGrid}>
+          {Object.entries(data.workshopCounts).map(([id, w]) => {
+            const pct = Math.round((w.count / w.capacity) * 100);
+            const isFull = w.count >= w.capacity;
+            const isAlmost = pct >= 70 && !isFull;
+            return (
+              <div key={id} style={styles.workshopCapCard}>
+                <div style={styles.workshopCapHeader}>
+                  <span style={styles.workshopCapId}>{id.toUpperCase()}</span>
+                  <span style={{
+                    ...styles.workshopCapBadge,
+                    backgroundColor: isFull ? "#C0392B" : isAlmost ? "#E67E22" : "#2E7D32",
+                  }}>
+                    {isFull ? "امتلأت" : isAlmost ? "تقترب" : "متاح"}
+                  </span>
+                </div>
+                <div style={styles.workshopCapName}>{w.name}</div>
+                <div style={styles.progressWrap}>
+                  <div style={styles.progressBar}>
+                    <div style={{
+                      ...styles.progressFill,
+                      width: `${pct}%`,
+                      backgroundColor: isFull ? "#C0392B" : isAlmost ? "#E67E22" : GOLD,
+                    }} />
+                  </div>
+                  <div style={styles.progressLabel}>
+                    <span style={{ fontWeight: 700, color: CHARCOAL }}>{w.count}</span>
+                    <span style={{ color: "#999" }}>/{w.capacity}</span>
+                    <span style={{ color: "#aaa", fontSize: "11px", marginRight: "auto" }}>
+                      {w.available} متبقي
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-          <div style={s.topBarRight}>
-            <div style={s.eventBadge}>
-              <span style={s.eventBadgeDot} />
-              <span>5–6 Dec 2026 · Miran Hotel</span>
-            </div>
-            <button onClick={fetchData} style={s.refreshBtn} className="action-btn">
-              <span style={{ fontSize: 16 }}>↺</span>
-              تحديث
-            </button>
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      <div style={s.content}>
-
-        {/* ── HERO STATS ── */}
-        <div style={s.heroGrid}>
-          <HeroCard
-            value={data.total}
-            label="إجمالي المسجلين"
-            sub={`${fillPct}% من الطاقة الاستيعابية`}
-            icon="👥"
-            color="#8B6F14"
-            gradient="linear-gradient(135deg, #8B6F14, #C9A227)"
-            progress={fillPct}
-          />
-          <HeroCard
-            value={data.twoWorkshops}
-            label="سجّلوا ورشتين"
-            sub={`${Math.round((data.twoWorkshops / (data.total || 1)) * 100)}% من المسجلين`}
-            icon="⭐"
-            color="#059669"
-            gradient="linear-gradient(135deg, #059669, #10b981)"
-            progress={Math.round((data.twoWorkshops / (data.total || 1)) * 100)}
-          />
-          <HeroCard
-            value={data.oneWorkshop}
-            label="سجّلوا ورشة واحدة"
-            sub={`${Math.round((data.oneWorkshop / (data.total || 1)) * 100)}% من المسجلين`}
-            icon="📌"
-            color="#2563eb"
-            gradient="linear-gradient(135deg, #2563eb, #3b82f6)"
-            progress={Math.round((data.oneWorkshop / (data.total || 1)) * 100)}
-          />
-          <HeroCard
-            value={Object.values(data.workshopCounts || {}).reduce((s, w) => s + (w.available || 0), 0)}
-            label="أماكن شاغرة"
-            sub={`من أصل ${totalCapacity} مقعد إجمالاً`}
-            icon="🎯"
-            color="#7c3aed"
-            gradient="linear-gradient(135deg, #7c3aed, #8b5cf6)"
-            progress={Math.max(0, 100 - fillPct)}
-          />
-        </div>
-
-        {/* ── WORKSHOP CAPACITY ── */}
-        <div style={s.card}>
-          <div style={s.cardHeader}>
-            <div style={s.cardTitleWrap}>
-              <div style={s.cardIcon}>🏛️</div>
-              <div>
-                <div style={s.cardTitle}>سعة الورشات</div>
-                <div style={s.cardSub}>الأماكن المتبقية لكل ورشة</div>
-              </div>
-            </div>
-            <div style={s.dayTabs}>
-              <span style={s.dayTab1}>Day 1 · 3 ورشات</span>
-              <span style={s.dayTab2}>Day 2 · 2 ورشات</span>
-            </div>
-          </div>
-
-          <div style={s.workshopGrid}>
-            {Object.entries(data.workshopCounts || {}).map(([id, w]) => {
-              const count = w.count || 0;
-              const capacity = w.capacity || 15;
-              const pct = Math.round((count / capacity) * 100);
-              const isFull = count >= capacity;
-              const isAlmost = pct >= 70 && !isFull;
-              const statusColor = isFull ? "#ef4444" : isAlmost ? "#f59e0b" : "#10b981";
-              const statusLabel = isFull ? "امتلأت" : isAlmost ? "تقترب" : "متاح";
-              const statusBg = isFull ? "#fef2f2" : isAlmost ? "#fffbeb" : "#f0fdf4";
-
+      {/* Specialty Distribution */}
+      <div style={styles.section}>
+        <h2 style={styles.sectionTitle}>توزيع التخصصات</h2>
+        <div style={styles.specialtyList}>
+          {Object.entries(data.specialtyCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([spec, count]) => {
+              const pct = Math.round((count / data.total) * 100);
               return (
-                <div key={id} style={s.wsCapCard} className="ws-card">
-                  <div style={s.wsCapTop}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <div style={{ ...s.wsIdBadge, background: WORKSHOP_DAYS[id] === "Day 1" ? "#eff6ff" : "#fdf4ff", color: WORKSHOP_DAYS[id] === "Day 1" ? "#2563eb" : "#7c3aed" }}>
-                        {WORKSHOP_DAYS[id]}
-                      </div>
-                      <div style={{ ...s.wsIdBadge, background: "#fefce8", color: "#854d0e" }}>
-                        {id.toUpperCase()}
-                      </div>
-                    </div>
-                    <div style={{ background: statusBg, color: statusColor, fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: `1px solid ${statusColor}30` }}>
-                      {statusLabel}
-                    </div>
+                <div key={spec} style={styles.specialtyRow}>
+                  <span style={styles.specialtyName}>{spec}</span>
+                  <div style={styles.specialtyBarWrap}>
+                    <div style={{ ...styles.specialtyBarFill, width: `${pct}%` }} />
                   </div>
-
-                  <div style={s.wsCapName}>{w.name || WORKSHOP_NAMES[id]}</div>
-                  <div style={s.wsCapLead}>
-                    <span style={{ marginLeft: 4 }}>👨‍⚕️</span>
-                    {WORKSHOP_LEADS[id]}
-                  </div>
-                  <div style={s.wsCapTime}>
-                    <span style={{ marginLeft: 4 }}>🕐</span>
-                    {WORKSHOP_TIMES[id]}
-                  </div>
-
-                  <div style={s.wsProgressSection}>
-                    <div style={s.wsProgressBar}>
-                      <div style={{
-                        ...s.wsProgressFill,
-                        width: `${pct}%`,
-                        background: isFull
-                          ? "linear-gradient(90deg, #ef4444, #dc2626)"
-                          : isAlmost
-                          ? "linear-gradient(90deg, #f59e0b, #d97706)"
-                          : "linear-gradient(90deg, #8B6F14, #C9A227)",
-                      }} />
-                    </div>
-                    <div style={s.wsProgressMeta}>
-                      <span style={{ fontWeight: 800, color: "#1e293b", fontSize: 15 }}>{count}</span>
-                      <span style={{ color: "#94a3b8", fontSize: 13 }}>/{capacity} مسجل</span>
-                      <span style={{ marginRight: "auto", fontSize: 12, color: statusColor, fontWeight: 700 }}>
-                        {w.available ?? (capacity - count)} متبقي
-                      </span>
-                      <span style={{ fontSize: 12, color: "#94a3b8" }}>{pct}%</span>
-                    </div>
-                  </div>
+                  <span style={styles.specialtyCount}>{count}</span>
+                  <span style={styles.specialtyPct}>{pct}%</span>
                 </div>
               );
             })}
-          </div>
         </div>
-
-        {/* ── BOTTOM GRID ── */}
-        <div style={s.bottomGrid}>
-
-          {/* Specialty Distribution */}
-          <div style={{ ...s.card, flex: "0 0 300px" }}>
-            <div style={s.cardHeader}>
-              <div style={s.cardTitleWrap}>
-                <div style={s.cardIcon}>🔬</div>
-                <div>
-                  <div style={s.cardTitle}>التخصصات</div>
-                  <div style={s.cardSub}>توزيع المسجلين</div>
-                </div>
-              </div>
-            </div>
-
-            {Object.keys(data.specialtyCounts || {}).length === 0 ? (
-              <div style={s.emptyState}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>📊</div>
-                <div style={{ color: "#94a3b8", fontSize: 13 }}>لا توجد بيانات بعد</div>
-              </div>
-            ) : (
-              <div style={s.specialtyList}>
-                {Object.entries(data.specialtyCounts || {})
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([spec, count], i) => {
-                    const pct = Math.round((count / (data.total || 1)) * 100);
-                    const colors = ["#8B6F14","#2563eb","#059669","#7c3aed","#ef4444","#f59e0b","#0891b2","#db2777"];
-                    const c = colors[i % colors.length];
-                    return (
-                      <div key={spec} style={s.specRow}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{spec}</span>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: c }}>{count}</span>
-                        </div>
-                        <div style={s.specBar}>
-                          <div style={{ ...s.specFill, width: `${pct}%`, background: c }} />
-                        </div>
-                        <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2, textAlign: "left" }}>{pct}%</div>
-                      </div>
-                    );
-                  })}
-              </div>
-            )}
-          </div>
-
-          {/* Registrations Table */}
-          <div style={{ ...s.card, flex: 1, minWidth: 0 }}>
-            <div style={s.cardHeader}>
-              <div style={s.cardTitleWrap}>
-                <div style={s.cardIcon}>📋</div>
-                <div>
-                  <div style={s.cardTitle}>قائمة المسجلين</div>
-                  <div style={s.cardSub}>{filteredRecent?.length || 0} نتيجة</div>
-                </div>
-              </div>
-              <div style={s.tableControls}>
-                <div style={s.searchWrap}>
-                  <span style={s.searchIcon}>🔍</span>
-                  <input
-                    type="text"
-                    placeholder="بحث..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    style={s.searchInput}
-                    dir="rtl"
-                  />
-                </div>
-                <select
-                  value={filterWorkshop}
-                  onChange={(e) => setFilterWorkshop(e.target.value)}
-                  style={s.filterSelect}
-                >
-                  <option value="all">كل الورشات</option>
-                  {Object.entries(WORKSHOP_NAMES).map(([id, name]) => (
-                    <option key={id} value={id}>{id.toUpperCase()} · {name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div style={s.tableWrap}>
-              {filteredRecent?.length === 0 ? (
-                <div style={s.emptyState}>
-                  <div style={{ fontSize: 40, marginBottom: 10 }}>🔍</div>
-                  <div style={{ color: "#374151", fontWeight: 600, marginBottom: 4 }}>لا توجد نتائج</div>
-                  <div style={{ color: "#94a3b8", fontSize: 13 }}>جرّب تغيير كلمة البحث أو الفلتر</div>
-                </div>
-              ) : (
-                <table style={s.table}>
-                  <thead>
-                    <tr style={s.thead}>
-                      <th style={s.th}>#</th>
-                      <th style={s.th}>المشارك</th>
-                      <th style={s.th}>التخصص</th>
-                      <th style={s.th}>جهة العمل</th>
-                      <th style={s.th}>واتساب</th>
-                      <th style={s.th}>الورشات</th>
-                      <th style={s.th}>التسجيل</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRecent?.map((r, i) => (
-                      <tr key={r.id || i} style={s.trow} className="ws-row">
-                        <td style={{ ...s.td, color: "#94a3b8", fontWeight: 600, fontSize: 12 }}>{r.id || (i + 1)}</td>
-                        <td style={s.td}>
-                          <div style={s.participantCell}>
-                            <div style={{ ...s.avatar, background: `hsl(${((r.id || i) * 47) % 360}, 60%, 50%)` }}>
-                              {r.fullNameAr ? r.fullNameAr[0] : "👤"}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 700, color: "#1e293b", fontSize: 13 }}>{r.fullNameAr || "غير محدد"}</div>
-                              <div style={{ fontSize: 11, color: "#94a3b8", direction: "ltr" }}>{r.fullNameEn || ""}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={s.td}>
-                          <span style={s.specTag}>{r.specialty || "عام"}</span>
-                        </td>
-                        <td style={{ ...s.td, fontSize: 12, color: "#475569", maxWidth: 140 }}>
-                          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {r.workplace || "—"}
-                          </div>
-                        </td>
-                        <td style={{ ...s.td, direction: "ltr", fontSize: 12, color: "#059669", fontWeight: 600 }}>
-                          {r.whatsapp || r.phone || "—"}
-                        </td>
-                        <td style={s.td}>
-                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                            {Array.isArray(r.workshops) ? r.workshops.map((wid) => (
-                              <span key={wid} style={{
-                                ...s.wTag,
-                                background: WORKSHOP_DAYS[wid] === "Day 1" ? "#eff6ff" : "#fdf4ff",
-                                color: WORKSHOP_DAYS[wid] === "Day 1" ? "#2563eb" : "#7c3aed",
-                                border: `1px solid ${WORKSHOP_DAYS[wid] === "Day 1" ? "#bfdbfe" : "#e9d5ff"}`,
-                              }}>
-                                {String(wid).toUpperCase()}
-                              </span>
-                            )) : null}
-                          </div>
-                        </td>
-                        <td style={{ ...s.td, fontSize: 11, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                          {r.createdAt ? new Date(r.createdAt).toLocaleDateString("ar-EG", { month: "short", day: "numeric" }) : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        </div>
-
       </div>
+
+      {/* Registrations Table */}
+      <div style={styles.section}>
+        <div style={styles.tableHeader}>
+          <h2 style={{ ...styles.sectionTitle, margin: 0 }}>
+            المسجلون ({filteredRecent?.length || 0})
+          </h2>
+          <div style={styles.tableControls}>
+            <input
+              type="text"
+              placeholder="بحث بالاسم أو الإيميل..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={styles.searchInput}
+              dir="rtl"
+            />
+            <select
+              value={filterWorkshop}
+              onChange={(e) => setFilterWorkshop(e.target.value)}
+              style={styles.filterSelect}
+            >
+              <option value="all">كل الورشات</option>
+              {Object.entries(WORKSHOP_NAMES).map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div style={styles.tableWrap}>
+          <table style={styles.table}>
+            <thead>
+              <tr style={styles.tableHeadRow}>
+                <th style={styles.th}>#</th>
+                <th style={styles.th}>الاسم</th>
+                <th style={styles.th}>التخصص</th>
+                <th style={styles.th}>واتساب</th>
+                <th style={styles.th}>الورشات</th>
+                <th style={styles.th}>تاريخ التسجيل</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRecent?.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#aaa" }}>
+                    لا توجد نتائج
+                  </td>
+                </tr>
+              ) : (
+                filteredRecent?.map((r, i) => (
+                  <tr key={r.id} style={i % 2 === 0 ? styles.trEven : styles.trOdd}>
+                    <td style={styles.td}>{r.id}</td>
+                    <td style={styles.td}>
+                      <div style={{ fontWeight: 600, color: CHARCOAL }}>{r.fullNameAr}</div>
+                      <div style={{ fontSize: "11px", color: "#888" }}>{r.fullNameEn}</div>
+                    </td>
+                    <td style={styles.td}>{r.specialty}</td>
+                    <td style={{ ...styles.td, direction: "ltr" }}>{r.whatsapp}</td>
+                    <td style={styles.td}>
+                      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                        {r.workshops.map((wid) => (
+                          <span key={wid} style={styles.workshopTag}>
+                            {wid.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ ...styles.td, fontSize: "11px", color: "#888" }}>
+                      {new Date(r.createdAt).toLocaleDateString("ar-EG", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 }
 
-/* ── HeroCard ── */
-function HeroCard({ value, label, sub, icon, color, gradient, progress }) {
+/* ── StatCard ── */
+function StatCard({ label, value, sub, color }) {
   return (
-    <div style={s.heroCard} className="ws-card">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-        <div style={{ ...s.heroIconWrap, background: gradient }}>
-          <span style={{ fontSize: 22 }}>{icon}</span>
-        </div>
-        <div style={{ ...s.heroPct, color }}>{progress}%</div>
-      </div>
-      <div style={{ ...s.heroValue, color }}>{value}</div>
-      <div style={s.heroLabel}>{label}</div>
-      <div style={s.heroSub}>{sub}</div>
-      <div style={s.heroBarBg}>
-        <div style={{ ...s.heroBarFill, width: `${Math.min(progress, 100)}%`, background: gradient }} />
-      </div>
+    <div style={styles.statCard}>
+      <div style={{ ...styles.statValue, color }}>{value}</div>
+      <div style={styles.statLabel}>{label}</div>
+      <div style={styles.statSub}>{sub}</div>
     </div>
   );
 }
 
 /* ── Styles ── */
-const s = {
+const styles = {
   page: {
-    background: "#f1f5f9",
-    minHeight: "100vh",
-    fontFamily: "'Cairo', 'Segoe UI', Arial, sans-serif",
+    padding: "24px",
+    fontFamily: "'Montserrat', 'Segoe UI', Arial, sans-serif",
+    color: CHARCOAL,
     direction: "rtl",
+    maxWidth: "1200px",
   },
-  loadingPage: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#f1f5f9",
-    fontFamily: "'Cairo', sans-serif",
-    direction: "rtl",
-  },
-  loadingCard: {
-    background: "#fff",
-    borderRadius: 24,
-    padding: "48px 40px",
-    textAlign: "center",
-    boxShadow: "0 20px 60px rgba(0,0,0,0.08)",
-    maxWidth: 320,
-  },
-  loadingSpinWrap: {
-    position: "relative",
-    width: 80,
-    height: 80,
-    margin: "0 auto 24px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loadingRing: {
-    position: "absolute",
-    inset: 0,
-    border: "3px solid #e2e8f0",
-    borderTopColor: "#8B6F14",
-    borderRadius: "50%",
-    animation: "spin 0.8s linear infinite",
-  },
-  loadingIcon: { fontSize: 32, position: "relative", zIndex: 1 },
-  loadingTitle: { fontSize: 18, fontWeight: 700, color: "#1e293b", marginBottom: 6 },
-  loadingSubtitle: { fontSize: 13, color: "#94a3b8" },
-
-  topBar: {
-    background: "#fff",
-    borderBottom: "1px solid #e2e8f0",
-    position: "sticky",
-    top: 0,
-    zIndex: 50,
-    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-  },
-  topBarInner: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "16px 28px",
-    maxWidth: "100%",
-    margin: "0 auto",
-    gap: 16,
-    flexWrap: "wrap",
-  },
-  topBarLeft: { flex: 1 },
-  topBarRight: { display: "flex", alignItems: "center", gap: 12, flexShrink: 0 },
-  breadcrumb: { display: "flex", alignItems: "center", gap: 6, marginBottom: 4 },
-  breadHome: { fontSize: 12, color: "#94a3b8", cursor: "pointer" },
-  breadSep: { fontSize: 12, color: "#cbd5e1" },
-  breadCurrent: { fontSize: 12, color: "#8B6F14", fontWeight: 600 },
-  pageTitle: { fontSize: 22, fontWeight: 900, color: "#1e293b", margin: 0, lineHeight: 1.2 },
-  lastUpdated: { fontSize: 11, color: "#94a3b8", marginTop: 2 },
-  eventBadge: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    background: "#f0fdf4",
-    border: "1px solid #bbf7d0",
-    borderRadius: 20,
-    padding: "5px 12px",
-    fontSize: 12,
-    color: "#059669",
-    fontWeight: 600,
-  },
-  eventBadgeDot: {
-    width: 7,
-    height: 7,
-    borderRadius: "50%",
-    background: "#10b981",
-    animation: "pulse 1.5s ease-in-out infinite",
-    display: "inline-block",
-  },
-  refreshBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "8px 16px",
-    background: "linear-gradient(135deg, #8B6F14, #C9A227)",
-    color: "#fff",
-    border: "none",
-    borderRadius: 10,
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: "pointer",
-    fontFamily: "inherit",
-    transition: "all 0.15s",
-  },
-  primaryBtn: {
-    padding: "10px 24px",
-    background: "linear-gradient(135deg, #8B6F14, #C9A227)",
-    color: "#fff",
-    border: "none",
-    borderRadius: 10,
-    fontSize: 14,
-    fontWeight: 700,
-    cursor: "pointer",
-    fontFamily: "inherit",
-    marginTop: 16,
-  },
-  content: {
-    maxWidth: "100%",
-    padding: "28px 24px 48px",
+  loadingWrap: {
     display: "flex",
     flexDirection: "column",
-    gap: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: "300px",
   },
-
-  heroGrid: {
+  spinner: {
+    width: "36px",
+    height: "36px",
+    border: `3px solid ${BEIGE}`,
+    borderTopColor: GOLD,
+    borderRadius: "50%",
+    animation: "spin 0.7s linear infinite",
+  },
+  retryBtn: {
+    marginTop: "16px",
+    padding: "8px 24px",
+    backgroundColor: GOLD,
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontFamily: "inherit",
+  },
+  header: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: "28px",
+  },
+  headerSub: {
+    fontSize: "12px",
+    color: GOLD,
+    fontWeight: 600,
+    marginBottom: "4px",
+  },
+  headerTitle: {
+    fontSize: "24px",
+    fontWeight: 700,
+    color: CHARCOAL,
+    margin: 0,
+  },
+  refreshBtn: {
+    padding: "8px 18px",
+    backgroundColor: "transparent",
+    border: `1.5px solid ${BEIGE}`,
+    borderRadius: "8px",
+    color: DARK_BROWN,
+    cursor: "pointer",
+    fontSize: "13px",
+    fontFamily: "inherit",
+    fontWeight: 600,
+  },
+  statsGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(4, 1fr)",
-    gap: 16,
+    gap: "16px",
+    marginBottom: "24px",
   },
-  heroCard: {
-    background: "#fff",
-    borderRadius: 16,
-    padding: "22px 20px",
-    border: "1px solid #f1f5f9",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-    transition: "all 0.2s ease",
-    cursor: "default",
+  statCard: {
+    backgroundColor: "#fff",
+    border: `1px solid ${BEIGE}`,
+    borderRadius: "12px",
+    padding: "20px",
+    boxShadow: "0 2px 8px rgba(139,111,20,0.06)",
   },
-  heroIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+  statValue: {
+    fontSize: "36px",
+    fontWeight: 800,
+    lineHeight: 1,
+    marginBottom: "6px",
   },
-  heroPct: { fontSize: 13, fontWeight: 700, opacity: 0.7 },
-  heroValue: { fontSize: 42, fontWeight: 900, lineHeight: 1, marginBottom: 4 },
-  heroLabel: { fontSize: 14, fontWeight: 700, color: "#374151", marginBottom: 2 },
-  heroSub: { fontSize: 12, color: "#94a3b8", marginBottom: 14 },
-  heroBarBg: { height: 4, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" },
-  heroBarFill: { height: "100%", borderRadius: 99, transition: "width 0.5s ease" },
-
-  card: {
-    background: "#fff",
-    borderRadius: 16,
-    border: "1px solid #f1f5f9",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-    overflow: "hidden",
+  statLabel: {
+    fontSize: "13px",
+    fontWeight: 600,
+    color: CHARCOAL,
+    marginBottom: "4px",
   },
-  cardHeader: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "20px 24px",
-    borderBottom: "1px solid #f8fafc",
-    gap: 12,
-    flexWrap: "wrap",
+  statSub: {
+    fontSize: "11px",
+    color: "#aaa",
   },
-  cardTitleWrap: { display: "flex", alignItems: "center", gap: 12 },
-  cardIcon: {
-    width: 40,
-    height: 40,
-    background: "#fefce8",
-    borderRadius: 10,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 20,
-    flexShrink: 0,
+  section: {
+    backgroundColor: "#fff",
+    border: `1px solid ${BEIGE}`,
+    borderRadius: "12px",
+    padding: "22px",
+    marginBottom: "24px",
+    boxShadow: "0 2px 8px rgba(139,111,20,0.06)",
   },
-  cardTitle: { fontSize: 16, fontWeight: 800, color: "#1e293b" },
-  cardSub: { fontSize: 12, color: "#94a3b8", marginTop: 1 },
-  dayTabs: { display: "flex", gap: 8 },
-  dayTab1: {
-    fontSize: 11, fontWeight: 700, color: "#2563eb",
-    background: "#eff6ff", border: "1px solid #bfdbfe",
-    padding: "4px 10px", borderRadius: 20,
+  sectionTitle: {
+    fontSize: "16px",
+    fontWeight: 700,
+    color: CHARCOAL,
+    marginBottom: "18px",
+    marginTop: 0,
   },
-  dayTab2: {
-    fontSize: 11, fontWeight: 700, color: "#7c3aed",
-    background: "#fdf4ff", border: "1px solid #e9d5ff",
-    padding: "4px 10px", borderRadius: 20,
-  },
-
   workshopGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-    gap: 16,
-    padding: 24,
+    gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+    gap: "14px",
   },
-  wsCapCard: {
-    border: "1px solid #f1f5f9",
-    borderRadius: 14,
-    padding: "18px 16px",
-    background: "#fafafa",
-    transition: "all 0.2s ease",
-    cursor: "default",
+  workshopCapCard: {
+    border: `1px solid ${BEIGE}`,
+    borderRadius: "10px",
+    padding: "14px",
+    backgroundColor: OFF_WHITE,
   },
-  wsCapTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
-  wsIdBadge: {
-    fontSize: 10, fontWeight: 700,
-    padding: "3px 8px", borderRadius: 6,
-    display: "inline-block",
+  workshopCapHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "6px",
   },
-  wsCapName: { fontSize: 14, fontWeight: 800, color: "#1e293b", marginBottom: 6, lineHeight: 1.4 },
-  wsCapLead: { fontSize: 11, color: "#64748b", marginBottom: 3, display: "flex", alignItems: "center" },
-  wsCapTime: { fontSize: 11, color: "#64748b", marginBottom: 14, display: "flex", alignItems: "center" },
-  wsProgressSection: {},
-  wsProgressBar: { height: 8, background: "#f1f5f9", borderRadius: 99, overflow: "hidden", marginBottom: 6 },
-  wsProgressFill: { height: "100%", borderRadius: 99, transition: "width 0.6s ease" },
-  wsProgressMeta: { display: "flex", alignItems: "center", gap: 4, fontSize: 12 },
-
-  bottomGrid: { display: "flex", gap: 20, alignItems: "flex-start" },
-
-  specialtyList: { padding: "16px 24px 24px", display: "flex", flexDirection: "column", gap: 14 },
-  specRow: {},
-  specBar: { height: 6, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" },
-  specFill: { height: "100%", borderRadius: 99, transition: "width 0.5s ease" },
-
-  tableControls: { display: "flex", gap: 10, flexWrap: "wrap" },
-  searchWrap: { position: "relative", display: "flex", alignItems: "center" },
-  searchIcon: { position: "absolute", right: 10, fontSize: 14, pointerEvents: "none", zIndex: 1 },
+  workshopCapId: {
+    fontSize: "11px",
+    fontWeight: 700,
+    color: GOLD,
+    backgroundColor: "#FBF7EE",
+    padding: "2px 8px",
+    borderRadius: "4px",
+    border: `1px solid #E8D9A0`,
+  },
+  workshopCapBadge: {
+    fontSize: "10px",
+    fontWeight: 700,
+    color: "#fff",
+    padding: "2px 8px",
+    borderRadius: "20px",
+  },
+  workshopCapName: {
+    fontSize: "12px",
+    fontWeight: 600,
+    color: CHARCOAL,
+    marginBottom: "10px",
+    lineHeight: 1.4,
+  },
+  progressWrap: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+  },
+  progressBar: {
+    height: "6px",
+    backgroundColor: BEIGE,
+    borderRadius: "99px",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: "99px",
+    transition: "width 0.3s ease",
+  },
+  progressLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: "2px",
+    fontSize: "12px",
+  },
+  specialtyList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  specialtyRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+  specialtyName: {
+    fontSize: "13px",
+    color: DARK_BROWN,
+    width: "160px",
+    flexShrink: 0,
+    fontWeight: 500,
+  },
+  specialtyBarWrap: {
+    flex: 1,
+    height: "8px",
+    backgroundColor: BEIGE,
+    borderRadius: "99px",
+    overflow: "hidden",
+  },
+  specialtyBarFill: {
+    height: "100%",
+    backgroundColor: GOLD,
+    borderRadius: "99px",
+    transition: "width 0.3s",
+  },
+  specialtyCount: {
+    fontSize: "13px",
+    fontWeight: 700,
+    color: CHARCOAL,
+    width: "28px",
+    textAlign: "center",
+  },
+  specialtyPct: {
+    fontSize: "11px",
+    color: "#aaa",
+    width: "36px",
+  },
+  tableHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "16px",
+    flexWrap: "wrap",
+    gap: "12px",
+  },
+  tableControls: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
   searchInput: {
-    padding: "8px 32px 8px 12px",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: 10,
-    fontSize: 13,
+    padding: "8px 12px",
+    border: `1.5px solid ${BEIGE}`,
+    borderRadius: "8px",
+    fontSize: "13px",
+    outline: "none",
     fontFamily: "inherit",
-    background: "#f8fafc",
-    color: "#1e293b",
-    minWidth: 180,
-    transition: "all 0.15s",
+    backgroundColor: OFF_WHITE,
+    minWidth: "200px",
   },
   filterSelect: {
     padding: "8px 12px",
-    border: "1.5px solid #e2e8f0",
-    borderRadius: 10,
-    fontSize: 12,
+    border: `1.5px solid ${BEIGE}`,
+    borderRadius: "8px",
+    fontSize: "13px",
+    outline: "none",
     fontFamily: "inherit",
-    background: "#f8fafc",
-    color: "#374151",
+    backgroundColor: OFF_WHITE,
+    color: CHARCOAL,
     cursor: "pointer",
-    transition: "all 0.15s",
   },
-  tableWrap: { overflowX: "auto" },
-  table: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
-  thead: { background: "#f8fafc", borderBottom: "2px solid #f1f5f9" },
+  tableWrap: {
+    overflowX: "auto",
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    fontSize: "13px",
+  },
+  tableHeadRow: {
+    backgroundColor: "#FDFCF8",
+    borderBottom: `2px solid ${BEIGE}`,
+  },
   th: {
-    padding: "12px 16px",
+    padding: "10px 14px",
     textAlign: "right",
     fontWeight: 700,
-    color: "#64748b",
-    fontSize: 11,
-    letterSpacing: "0.5px",
-    textTransform: "uppercase",
+    color: DARK_BROWN,
+    fontSize: "12px",
     whiteSpace: "nowrap",
   },
-  trow: {
-    borderBottom: "1px solid #f8fafc",
-    transition: "background 0.1s",
+  trEven: {
+    backgroundColor: "#fff",
+    borderBottom: `1px solid ${BEIGE}`,
   },
-  td: { padding: "12px 16px", verticalAlign: "middle", textAlign: "right" },
-  participantCell: { display: "flex", alignItems: "center", gap: 10 },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: 800,
-    flexShrink: 0,
+  trOdd: {
+    backgroundColor: "#FDFCF8",
+    borderBottom: `1px solid ${BEIGE}`,
   },
-  specTag: {
-    display: "inline-block",
-    fontSize: 11,
-    fontWeight: 600,
-    color: "#8B6F14",
-    background: "#fefce8",
-    border: "1px solid #fde68a",
-    padding: "2px 8px",
-    borderRadius: 20,
+  td: {
+    padding: "10px 14px",
+    textAlign: "right",
+    verticalAlign: "middle",
   },
-  wTag: {
-    display: "inline-block",
-    fontSize: 10,
-    fontWeight: 800,
-    padding: "2px 7px",
-    borderRadius: 6,
-  },
-  emptyState: {
-    padding: "40px 20px",
-    textAlign: "center",
+  workshopTag: {
+    fontSize: "10px",
+    fontWeight: 700,
+    color: GOLD,
+    backgroundColor: "#FBF7EE",
+    border: `1px solid #E8D9A0`,
+    padding: "2px 6px",
+    borderRadius: "4px",
   },
 };
