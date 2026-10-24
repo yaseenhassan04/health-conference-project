@@ -70,7 +70,7 @@ export async function POST(req) {
       );
     }
 
-    // 5. تحقق من سعة كل ورشة (15 مقعد)
+    // 5. تحقق من سعة كل ورشة (20 مقعد)
     for (const workshopId of workshops) {
       // نجيب كل السجلات ونفلتر بـ JSON.parse لتفادي خطأ contains (مثلاً w1 يلتقط w10)
       const allRegs = await prisma.workshopRegistration.findMany({
@@ -79,7 +79,7 @@ export async function POST(req) {
       const count = allRegs.filter((r) => {
         try { return JSON.parse(r.workshops).includes(workshopId); } catch { return false; }
       }).length;
-      if (count >= 15) {
+      if (count >= 20) {
         return NextResponse.json(
           {
             error: `ورشة "${WORKSHOP_NAMES[workshopId]}" امتلأت — لا توجد أماكن شاغرة`,
@@ -133,8 +133,8 @@ export async function GET() {
       workshopCounts[id] = {
         name: WORKSHOP_NAMES[id],
         count: idCount,
-        capacity: 15,
-        available: 15 - idCount,
+        capacity: 20,
+        available: 20 - idCount,
       };
     });
 
