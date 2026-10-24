@@ -11,7 +11,7 @@ const WORKSHOPS = [
     subtitle: "Practical Skills for Safer, Faster, Better Care",
     lead: "Dr. Fahad Alhadad",
     time: "08:00 – 10:00",
-    slots: 15,
+    slots: 20,
   },
   {
     id: "w2",
@@ -21,7 +21,7 @@ const WORKSHOPS = [
     subtitle: "From Complexity to Confidence",
     lead: "Dr. Ahmed Abu Taha",
     time: "10:00 – 12:00",
-    slots: 15,
+    slots: 20,
   },
   {
     id: "w3",
@@ -31,7 +31,7 @@ const WORKSHOPS = [
     subtitle: "Read the Clues, Treat the Cause",
     lead: "Dr. Abedesalam Alashgar",
     time: "12:00 – 14:00",
-    slots: 15,
+    slots: 20,
   },
   {
     id: "w4",
@@ -41,7 +41,7 @@ const WORKSHOPS = [
     subtitle: "From Symptoms to Solutions",
     lead: "Dr. Mahmoud Sheikh Ali",
     time: "08:00 – 10:00",
-    slots: 15,
+    slots: 20,
   },
   {
     id: "w5",
@@ -51,7 +51,7 @@ const WORKSHOPS = [
     subtitle: "Point of Care Ultrasound · See More · Do More · Improve Care",
     lead: "Dr. Mohammed Qandil",
     time: "10:00 – 13:00",
-    slots: 15,
+    slots: 20,
   },
 ];
 
@@ -292,7 +292,7 @@ export default function WorkshopRegistrationPage() {
           <Section number="03" title="اختيار ورشات العمل" titleEn="Workshop Selection">
             <div style={styles.workshopNote}>
               <span style={styles.noteDot} />
-              يُسمح لكل مشترك بالتسجيل في <strong>ورشتين كحد أقصى</strong> — الأماكن محدودة (15 مشتركاً لكل ورشة).
+              يُسمح لكل مشترك بالتسجيل في <strong>ورشتين كحد أقصى</strong> — الأماكن محدودة (20 مشتركاً لكل ورشة).
               {form.workshops.length > 0 && (
                 <span style={styles.selectedCount}>
                   {form.workshops.length}/2 مختار
