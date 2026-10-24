@@ -146,3 +146,14 @@ model WorkshopRegistration {
   workshops    String   // JSON array: ["w1","w3"]
   createdAt    DateTime @default(now())
 }
+model StaffUser {
+  id          Int      @id @default(autoincrement())
+  username    String   @unique
+  password    String   // bcrypt hash
+  displayName String
+  role        String   @default("staff")  // دايماً "staff"
+  permissions String   // JSON array: ["workshops","news","gallery","library","abstracts","live"]
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

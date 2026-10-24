@@ -1,7 +1,8 @@
 "use client";
 /**
- * dashboard/layout.jsx
+ * app/dashboard/layout.jsx
  * حماية كل صفحات /dashboard/* + Top Navbar
+ * يدعم: admin (صلاحيات كاملة) + staff (صلاحيات مخصصة)
  */
 
 import { useEffect, useState, createContext, useContext } from "react";
@@ -13,75 +14,61 @@ export const useAuth = () => useContext(AuthContext);
 function decodeJWT(token) {
   try {
     const payload = token.split(".")[1];
-    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    return decoded;
+    return JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
   } catch {
     return null;
   }
 }
 
-/* ─── Role Config ─── */
-export const ROLE_CONFIG = {
-  admin: {
-    label: "مسؤول النظام",
-    color: "#C8102E",
-    bg: "rgba(200,16,46,0.1)",
-    icon: "⚙️",
-    pages: ["library", "submission", "gallery", "news", "live", "users", "workshops"], // ← أضفنا workshops
-  },
-  doctor: {
-    label: "دكتور",
-    color: "#1B365D",
-    bg: "rgba(27,54,93,0.1)",
-    icon: "🩺",
-    pages: ["library", "submission"],
-  },
-  media: {
-    label: "مسؤول الإعلام",
-    color: "#D4AF37",
-    bg: "rgba(212,175,55,0.1)",
-    icon: "📸",
-    pages: ["gallery", "news", "live"],
-  },
+/* ─── Page Meta ─── */
+export const PAGE_META = {
+  library:    { label: "المكتبة الرقمية",  icon: "📚", path: "/dashboard/library" },
+  abstracts:  { label: "الأبحاث المقدمة", icon: "📋", path: "/dashboard/submission" },
+  gallery:    { label: "ألبوم الصور",       icon: "🖼️", path: "/dashboard/gallery" },
+  news:       { label: "الأخبار",           icon: "📰", path: "/dashboard/news" },
+  live:       { label: "البث المباشر",     icon: "📡", path: "/dashboard/live" },
+  users:      { label: "إدارة المستخدمين", icon: "👥", path: "/dashboard/users" },
+  workshops:  { label: "ورشات العمل",       icon: "📝", path: "/dashboard/workshops" },
 };
 
-export const PAGE_META = {
-  library:    { label: "المكتبة الرقمية",     icon: "📚", path: "/dashboard/library" },
-  submission: { label: "الأبحاث المقدمة",     icon: "📋", path: "/dashboard/submission" },
-  gallery:    { label: "ألبوم الصور",          icon: "🖼️", path: "/dashboard/gallery" },
-  news:       { label: "الأخبار",              icon: "📰", path: "/dashboard/news" },
-  live:       { label: "البث المباشر",        icon: "📡", path: "/dashboard/live" },
-  users:      { label: "إدارة المستخدمين",    icon: "👥", path: "/dashboard/users" },
-  workshops:  { label: "ورشات العمل",          icon: "📝", path: "/dashboard/workshops" }, // ← جديد
-};
+const ADMIN_PAGES = Object.keys(PAGE_META); // أدمن يرى كل شيء
 
 /* ─── Navbar ─── */
 function Navbar({ user, onLogout }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const role = ROLE_CONFIG[user?.role] || ROLE_CONFIG.doctor;
-  const allowedPages = role.pages || [];
+  const router   = useRouter();
+  const isAdmin  = user?.role === "admin";
+
+  // الصفحات المسموح بها حسب الدور
+  const allowedPages = isAdmin
+    ? ADMIN_PAGES
+    : (user?.permissions || []).filter((p) => PAGE_META[p]);
+
+  const roleLabel = isAdmin ? "مسؤول النظام" : "مستخدم";
+  const roleColor = isAdmin ? "#C8102E" : "#D4AF37";
+  const roleIcon  = isAdmin ? "⚙️" : "👤";
 
   return (
     <nav style={{
       position: "sticky", top: 0, zIndex: 100,
       background: "#1B365D",
       boxShadow: "0 2px 20px rgba(0,0,0,0.18)",
-      fontFamily: "'Cairo', sans-serif",
-      direction: "rtl",
+      fontFamily: "'Cairo', sans-serif", direction: "rtl",
     }}>
+      {/* Top Row */}
       <div style={{
         display: "flex", alignItems: "center",
         justifyContent: "space-between",
         padding: "0 28px", height: 62,
         borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}>
+        {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10,
             background: "linear-gradient(135deg,#D4AF37,#C8102E)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 18, fontWeight: 900,
+            fontSize: 18, fontWeight: 900, color: "#fff",
           }}>م</div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>
@@ -93,19 +80,22 @@ function Navbar({ user, onLogout }) {
           </div>
         </div>
 
+        {/* Right side */}
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {/* Role badge */}
           <div style={{
             display: "flex", alignItems: "center", gap: 6,
-            background: role.bg,
-            border: `1px solid ${role.color}40`,
+            background: `${roleColor}18`,
+            border: `1px solid ${roleColor}40`,
             padding: "5px 12px", borderRadius: 20,
           }}>
-            <span style={{ fontSize: 14 }}>{role.icon}</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: role.color }}>
-              {role.label}
+            <span style={{ fontSize: 14 }}>{roleIcon}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: roleColor }}>
+              {roleLabel}
             </span>
           </div>
 
+          {/* User */}
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
             background: "rgba(255,255,255,0.07)",
@@ -115,8 +105,7 @@ function Navbar({ user, onLogout }) {
               width: 28, height: 28, borderRadius: "50%",
               background: "linear-gradient(135deg,#D4AF37,#C8102E)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 900, color: "#fff",
-              flexShrink: 0,
+              fontSize: 12, fontWeight: 900, color: "#fff", flexShrink: 0,
             }}>
               {user?.name?.[0] || "؟"}
             </div>
@@ -125,17 +114,16 @@ function Navbar({ user, onLogout }) {
             </span>
           </div>
 
-          <button
-            onClick={onLogout}
-            style={{
-              padding: "7px 14px", borderRadius: 8,
-              background: "rgba(200,16,46,0.15)",
-              border: "1px solid rgba(200,16,46,0.4)",
-              color: "#ff6b7a", fontSize: 12, fontWeight: 700,
-              cursor: "pointer", fontFamily: "'Cairo',sans-serif",
-              transition: "all .2s",
-              display: "flex", alignItems: "center", gap: 5,
-            }}
+          {/* Logout */}
+          <button onClick={onLogout} style={{
+            padding: "7px 14px", borderRadius: 8,
+            background: "rgba(200,16,46,0.15)",
+            border: "1px solid rgba(200,16,46,0.4)",
+            color: "#ff6b7a", fontSize: 12, fontWeight: 700,
+            cursor: "pointer", fontFamily: "'Cairo',sans-serif",
+            transition: "all .2s",
+            display: "flex", alignItems: "center", gap: 5,
+          }}
             onMouseEnter={e => e.currentTarget.style.background = "rgba(200,16,46,0.3)"}
             onMouseLeave={e => e.currentTarget.style.background = "rgba(200,16,46,0.15)"}
           >
@@ -144,27 +132,23 @@ function Navbar({ user, onLogout }) {
         </div>
       </div>
 
+      {/* Nav Links Row */}
       <div style={{
         display: "flex", alignItems: "center",
-        gap: 4, padding: "0 28px", height: 46,
-        overflowX: "auto",
+        gap: 4, padding: "0 28px", height: 46, overflowX: "auto",
       }}>
         <NavLink
-          href="/dashboard"
-          label="الرئيسية"
-          icon="🏠"
+          label="الرئيسية" icon="🏠"
           active={pathname === "/dashboard"}
           onClick={() => router.push("/dashboard")}
         />
-        {allowedPages.map(key => {
+        {allowedPages.map((key) => {
           const meta = PAGE_META[key];
           if (!meta) return null;
           return (
             <NavLink
               key={key}
-              href={meta.path}
-              label={meta.label}
-              icon={meta.icon}
+              label={meta.label} icon={meta.icon}
               active={pathname.startsWith(meta.path)}
               onClick={() => router.push(meta.path)}
             />
@@ -177,19 +161,16 @@ function Navbar({ user, onLogout }) {
 
 function NavLink({ label, icon, active, onClick }) {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", gap: 6,
-        padding: "6px 14px", borderRadius: 8,
-        background: active ? "rgba(212,175,55,0.2)" : "transparent",
-        border: active ? "1px solid rgba(212,175,55,0.4)" : "1px solid transparent",
-        color: active ? "#D4AF37" : "rgba(255,255,255,0.55)",
-        fontSize: 12, fontWeight: active ? 700 : 500,
-        cursor: "pointer", fontFamily: "'Cairo',sans-serif",
-        whiteSpace: "nowrap", transition: "all .15s",
-        flexShrink: 0,
-      }}
+    <button onClick={onClick} style={{
+      display: "flex", alignItems: "center", gap: 6,
+      padding: "6px 14px", borderRadius: 8,
+      background: active ? "rgba(212,175,55,0.2)" : "transparent",
+      border: active ? "1px solid rgba(212,175,55,0.4)" : "1px solid transparent",
+      color: active ? "#D4AF37" : "rgba(255,255,255,0.55)",
+      fontSize: 12, fontWeight: active ? 700 : 500,
+      cursor: "pointer", fontFamily: "'Cairo',sans-serif",
+      whiteSpace: "nowrap", transition: "all .15s", flexShrink: 0,
+    }}
       onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#fff"; }}
       onMouseLeave={e => { if (!active) e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
     >
@@ -204,8 +185,7 @@ function LoadingScreen() {
     <div style={{
       minHeight: "100vh", display: "flex",
       alignItems: "center", justifyContent: "center",
-      background: "#F4F7F9", fontFamily: "'Cairo',sans-serif",
-      direction: "rtl",
+      background: "#F4F7F9", fontFamily: "'Cairo',sans-serif", direction: "rtl",
     }}>
       <div style={{ textAlign: "center" }}>
         <div style={{
@@ -227,26 +207,79 @@ function LoadingScreen() {
   );
 }
 
-export default function DashboardLayout({ children }) {
+/* ─── Access Denied ─── */
+function AccessDenied() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  return (
+    <div style={{
+      minHeight: "80vh", display: "flex", alignItems: "center",
+      justifyContent: "center", fontFamily: "'Cairo',sans-serif", direction: "rtl",
+    }}>
+      <div style={{
+        textAlign: "center", background: "#fff", borderRadius: 20,
+        padding: "48px 40px", boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+        maxWidth: 380,
+      }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>🔒</div>
+        <div style={{ fontSize: 20, fontWeight: 900, color: "#1B365D", marginBottom: 8 }}>
+          غير مصرح بالوصول
+        </div>
+        <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24 }}>
+          ليس لديك صلاحية للوصول لهذه الصفحة
+        </div>
+        <button
+          onClick={() => router.push("/dashboard")}
+          style={{
+            padding: "10px 24px", borderRadius: 10,
+            background: "linear-gradient(135deg,#1B365D,#2a4a7f)",
+            color: "#fff", border: "none", fontSize: 14, fontWeight: 700,
+            cursor: "pointer", fontFamily: "'Cairo',sans-serif",
+          }}
+        >
+          🏠 العودة للرئيسية
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Layout ─── */
+export default function DashboardLayout({ children }) {
+  const router   = useRouter();
+  const pathname = usePathname();
+  const [user, setUser]       = useState(null);
   const [checking, setChecking] = useState(true);
+  const [denied, setDenied]   = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token");
-    if (!token) {
-      router.replace("/login");
-      return;
-    }
+    if (!token) { router.replace("/login"); return; }
+
     const payload = decodeJWT(token);
     if (!payload || (payload.exp && payload.exp * 1000 < Date.now())) {
       localStorage.removeItem("auth_token");
       router.replace("/login");
       return;
     }
+
     setUser(payload);
+
+    // ── تحقق من الصلاحية على الصفحة الحالية ──
+    if (payload.role !== "admin") {
+      const permissions = payload.permissions || [];
+      // ابحث عن أي page meta مسار بيبدأ بالـ pathname الحالي
+      const currentPageKey = Object.entries(PAGE_META).find(([, meta]) =>
+        pathname.startsWith(meta.path)
+      )?.[0];
+
+      // لو الصفحة محمية وما عنده صلاحية — امنعه
+      if (currentPageKey && !permissions.includes(currentPageKey)) {
+        setDenied(true);
+      }
+    }
+
     setChecking(false);
-  }, [router]);
+  }, [pathname, router]);
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token");
@@ -256,7 +289,7 @@ export default function DashboardLayout({ children }) {
   if (checking) return <LoadingScreen />;
 
   return (
-    <AuthContext.Provider value={{ user, role: user?.role }}>
+    <AuthContext.Provider value={{ user, role: user?.role, permissions: user?.permissions || [] }}>
       <div style={{ minHeight: "100vh", background: "#F0F4F8", fontFamily: "'Cairo',sans-serif" }}>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
@@ -267,7 +300,9 @@ export default function DashboardLayout({ children }) {
           ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         `}</style>
         <Navbar user={user} onLogout={handleLogout} />
-        <main style={{ width: "100%" }}>{children}</main>
+        <main style={{ width: "100%" }}>
+          {denied ? <AccessDenied /> : children}
+        </main>
       </div>
     </AuthContext.Provider>
   );
