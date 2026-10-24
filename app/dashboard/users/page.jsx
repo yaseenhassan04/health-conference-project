@@ -5,7 +5,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useAuth, PAGE_META } from "./layout";
+import { useAuth, PAGE_META } from "../layout";
 import { useState } from "react";  // ← أضف هذا السطر
 
 const B = "#1B365D", R = "#C8102E", G = "#D4AF37";
