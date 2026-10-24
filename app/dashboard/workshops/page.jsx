@@ -37,11 +37,11 @@ export default function WorkshopsDashboard() {
     oneWorkshop: 0,
     twoWorkshops: 0,
     workshopCounts: {
-      w1: { name: WORKSHOP_NAMES.w1, count: 0, capacity: 15, available: 15 },
-      w2: { name: WORKSHOP_NAMES.w2, count: 0, capacity: 15, available: 15 },
-      w3: { name: WORKSHOP_NAMES.w3, count: 0, capacity: 15, available: 15 },
-      w4: { name: WORKSHOP_NAMES.w4, count: 0, capacity: 15, available: 15 },
-      w5: { name: WORKSHOP_NAMES.w5, count: 0, capacity: 15, available: 15 },
+      w1: { name: WORKSHOP_NAMES.w1, count: 0, capacity: 20, available: 20 },
+      w2: { name: WORKSHOP_NAMES.w2, count: 0, capacity: 20, available: 20 },
+      w3: { name: WORKSHOP_NAMES.w3, count: 0, capacity: 20, available: 20 },
+      w4: { name: WORKSHOP_NAMES.w4, count: 0, capacity: 20, available: 20 },
+      w5: { name: WORKSHOP_NAMES.w5, count: 0, capacity: 20, available: 20 },
     },
     specialtyCounts: {},
     recent: []
@@ -118,7 +118,7 @@ export default function WorkshopsDashboard() {
     </div>
   );
 
-  const totalCapacity = 75;
+  const totalCapacity = 100;
   const fillPct = Math.round(((data?.total || 0) / totalCapacity) * 100);
 
   return (
@@ -223,7 +223,7 @@ export default function WorkshopsDashboard() {
           <div style={s.workshopGrid}>
             {Object.entries(data.workshopCounts || {}).map(([id, w]) => {
               const count = w.count || 0;
-              const capacity = w.capacity || 15;
+              const capacity = w.capacity || 20;
               const pct = Math.round((count / capacity) * 100);
               const isFull = count >= capacity;
               const isAlmost = pct >= 70 && !isFull;
