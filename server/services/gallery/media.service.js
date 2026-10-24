@@ -36,7 +36,7 @@ async function writeDb(items) {
       access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
-      allowOverwrite: true, // ← أضف هاد السطر
+      allowOverwrite: true, 
     });
   } catch (err) {
     console.error('❌ فشل كتابة البيانات:', err.message);

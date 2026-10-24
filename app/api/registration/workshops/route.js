@@ -72,11 +72,13 @@ export async function POST(req) {
 
     // 5. تحقق من سعة كل ورشة (15 مقعد)
     for (const workshopId of workshops) {
-      const count = await prisma.workshopRegistration.count({
-        where: {
-          workshops: { contains: workshopId },
-        },
+      // نجيب كل السجلات ونفلتر بـ JSON.parse لتفادي خطأ contains (مثلاً w1 يلتقط w10)
+      const allRegs = await prisma.workshopRegistration.findMany({
+        select: { workshops: true },
       });
+      const count = allRegs.filter((r) => {
+        try { return JSON.parse(r.workshops).includes(workshopId); } catch { return false; }
+      }).length;
       if (count >= 15) {
         return NextResponse.json(
           {
@@ -125,11 +127,14 @@ export async function GET() {
     // عدد المسجلين لكل ورشة
     const workshopCounts = {};
     Object.keys(WORKSHOP_NAMES).forEach((id) => {
+      const idCount = all.filter((r) => {
+        try { return JSON.parse(r.workshops).includes(id); } catch { return false; }
+      }).length;
       workshopCounts[id] = {
         name: WORKSHOP_NAMES[id],
-        count: all.filter((r) => r.workshops.includes(id)).length,
+        count: idCount,
         capacity: 15,
-        available: 15 - all.filter((r) => r.workshops.includes(id)).length,
+        available: 15 - idCount,
       };
     });
 
@@ -153,7 +158,7 @@ export async function GET() {
       specialtyCounts,
       oneWorkshop,
       twoWorkshops,
-      recent: all.slice(0, 20).map((r) => ({
+      recent: all.map((r) => ({
         id: r.id,
         fullNameAr: r.fullNameAr,
         fullNameEn: r.fullNameEn,
