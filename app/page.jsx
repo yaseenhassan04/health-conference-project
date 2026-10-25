@@ -1172,7 +1172,7 @@ const handleLike = useCallback((realIdx) => {
                     position: "relative",
                     /* ─── نسبة 1:1 ─── */
                     width: "100%",
-                    aspectRatio: "1 / 1",
+                    aspectRatio: "16 / 9",
                     overflow: "hidden",
                     userSelect: "none",
                     background: "#000",
