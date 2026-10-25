@@ -33,6 +33,31 @@ export const PAGE_META = {
 
 const ADMIN_PAGES = Object.keys(PAGE_META); // أدمن يرى كل شيء
 
+/* ─── ROLE_CONFIG — يُصدَّر للاستخدام في page.jsx ─── */
+export const ROLE_CONFIG = {
+  admin: {
+    label: "مسؤول النظام",
+    icon: "⚙️",
+    pages: ADMIN_PAGES,
+  },
+  doctor: {
+    label: "طبيب / باحث",
+    icon: "🩺",
+    pages: ["library", "abstracts"],
+  },
+  media: {
+    label: "مسؤول الإعلام",
+    icon: "📸",
+    pages: ["gallery", "news"],
+  },
+  staff: {
+    label: "موظف",
+    icon: "👤",
+    // الصلاحيات تأتي من permissions في الـ JWT — تُحسب ديناميكياً
+    pages: [],
+  },
+};
+
 /* ─── Navbar ─── */
 function Navbar({ user, onLogout }) {
   const pathname = usePathname();
@@ -288,8 +313,23 @@ export default function DashboardLayout({ children }) {
 
   if (checking) return <LoadingScreen />;
 
+  // ─── احسب الصفحات المسموحة بناءً على role أو permissions ───
+  const computedRole = user?.role || "doctor";
+  const userPermissions = user?.permissions || [];
+  const computedPages =
+    computedRole === "admin"
+      ? ADMIN_PAGES
+      : ROLE_CONFIG[computedRole]?.pages?.length
+        ? ROLE_CONFIG[computedRole].pages
+        : userPermissions.filter((p) => PAGE_META[p]);
+
   return (
-    <AuthContext.Provider value={{ user, role: user?.role, permissions: user?.permissions || [] }}>
+    <AuthContext.Provider value={{
+      user,
+      role: computedRole,
+      permissions: userPermissions,
+      allowedPages: computedPages,
+    }}>
       <div style={{ minHeight: "100vh", background: "#F0F4F8", fontFamily: "'Cairo',sans-serif" }}>
         <style>{`
           @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');

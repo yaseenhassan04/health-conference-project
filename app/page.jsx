@@ -10,7 +10,19 @@ import NewsTicker from "@/client/components/home/NewsTicker";
 import IconGlyph from "@/client/components/home/IconGlyph";
 import PersonModal from "@/client/components/home/PersonModal";
 import "./styles/home.css";
-
+const statsSaveTimer = { current: null };
+ 
+function saveStats(likes, views) {
+  clearTimeout(statsSaveTimer.current);
+  statsSaveTimer.current = setTimeout(() => {
+    fetch("/api/gallery/stats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ likes, views }),
+    }).catch(() => {}); // صامت عند الفشل
+  }, 1500); // نانتظر 1.5 ثانية قبل الإرسال
+}
+ 
 function proxyImg(url) {
   if (!url) return "";
   if (url.includes("vercel-storage.com") || url.includes("blob.vercel")) {
@@ -316,25 +328,47 @@ export default function Home() {
   const [hoveredThumb, setHoveredThumb] = useState(null);
   const thumbStripRef = useRef(null);
 
+  // ─── Timer ref للزيادة العشوائية (بدل interval) ───
+  const autoIncrementTimer = useRef(null);
+
   const MEDIA_CATEGORIES = isRtl ? MEDIA_CATEGORIES_AR : MEDIA_CATEGORIES_EN;
 
-  /* Auto increment views/likes */
+  /* ─── زيادة عشوائية طبيعية بـ setTimeout متكرر (لا interval ثابت) ─── */
   useEffect(() => {
     if (!mediaItems.length) return;
-    const interval = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * mediaItems.length);
-      setMediaViews(prev => ({
-        ...prev,
-        [randomIndex]: (prev[randomIndex] || 100) + Math.floor(Math.random() * 3) + 1,
-      }));
-      if (Math.random() > 0.5) {
-        setMediaLikes(prev => ({
-          ...prev,
-          [randomIndex]: (prev[randomIndex] || 10) + 1,
-        }));
+
+    const scheduleNext = () => {
+  const delay = 8000 + Math.random() * 7000;
+  autoIncrementTimer.current = setTimeout(() => {
+    const randomIndex = Math.floor(Math.random() * mediaItems.length);
+ 
+    setMediaViews(prevViews => {
+      // بيزيد فوق أي قيمة موجودة — لو ما في قيمة بعد، بيستنى ما يزيد
+      const current = prevViews[randomIndex];
+      if (current === undefined) return prevViews; // ← لسا ما اتحمل من API
+      const nextViews = { ...prevViews, [randomIndex]: current + 1 };
+ 
+      if (Math.random() < 0.35) {
+        setMediaLikes(prevLikes => {
+          const currentLike = prevLikes[randomIndex];
+          if (currentLike === undefined) return prevLikes;
+          const nextLikes = { ...prevLikes, [randomIndex]: currentLike + 1 };
+          saveStats(nextLikes, nextViews);
+          return nextLikes;
+        });
+      } else {
+        setMediaLikes(likes => { saveStats(likes, nextViews); return likes; });
       }
-    }, 20000);
-    return () => clearInterval(interval);
+ 
+      return nextViews;
+    });
+ 
+    scheduleNext();
+  }, delay);
+};
+
+    scheduleNext();
+    return () => clearTimeout(autoIncrementTimer.current);
   }, [mediaItems]);
 
   const filteredMedia = useMemo(
@@ -365,27 +399,71 @@ export default function Home() {
     if (activeSlide >= filteredMedia.length && filteredMedia.length > 0) setActiveSlide(0);
   }, [filteredMedia.length]);
 
-  /* Initialize likes/views */
+  /* ─── تهيئة الإعجابات والمشاهدات ─── */
   useEffect(() => {
-    const initLikes = {};
-    const initViews = {};
-    mediaItems.forEach((_, i) => {
-      initLikes[i] = Math.floor(Math.random() * 30) + 5;
-      initViews[i] = Math.floor(Math.random() * 200) + 50;
+  if (!mediaItems.length) return;
+ 
+  fetch("/api/gallery/stats")
+    .then(r => r.json())
+    .then(data => {
+      // إذا في أرقام محفوظة → استخدمها
+      // إذا مفيش (أول مرة) → ولّد أرقام أولية وارفعها
+      const savedLikes = data.likes || {};
+      const savedViews = data.views || {};
+ 
+      const initLikes = {};
+      const initViews = {};
+      let needsSave = false;
+ 
+      mediaItems.forEach((_, i) => {
+        const k = String(i);
+        if (savedLikes[k] !== undefined) {
+          initLikes[i] = savedLikes[k];
+        } else {
+          initLikes[i] = Math.floor(Math.random() * 30) + 5;
+          needsSave = true;
+        }
+        if (savedViews[k] !== undefined) {
+          initViews[i] = savedViews[k];
+        } else {
+          initViews[i] = Math.floor(Math.random() * 200) + 50;
+          needsSave = true;
+        }
+      });
+ 
+      setMediaLikes(initLikes);
+      setMediaViews(initViews);
+ 
+      // احفظ الأرقام الأولية إذا كانت أول مرة
+      if (needsSave) saveStats(initLikes, initViews);
+    })
+    .catch(() => {
+      // إذا فشل الـ API → ولّد أرقام محلية
+      const initLikes = {};
+      const initViews = {};
+      mediaItems.forEach((_, i) => {
+        initLikes[i] = Math.floor(Math.random() * 30) + 5;
+        initViews[i] = Math.floor(Math.random() * 200) + 50;
+      });
+      setMediaLikes(initLikes);
+      setMediaViews(initViews);
     });
-    setMediaLikes(initLikes);
-    setMediaViews(initViews);
-  }, [mediaItems]);
+}, [mediaItems]);
 
-  /* Track view when slide changes */
-  useEffect(() => {
-    if (filteredMedia[activeSlide]) {
-      const realIdx = mediaItems.indexOf(filteredMedia[activeSlide]);
-      setMediaViews(prev => ({ ...prev, [realIdx]: (prev[realIdx] || 0) + 1 }));
-    }
-  }, [activeSlide]);
+  /* ─── زيادة المشاهدة عند تغيير الـ slide يدوياً ─── */
+ useEffect(() => {
+  if (filteredMedia[activeSlide]) {
+    const realIdx = mediaItems.indexOf(filteredMedia[activeSlide]);
+    setMediaViews(prev => {
+      const next = { ...prev, [realIdx]: (prev[realIdx] || 0) + 1 };
+      // احفظ بعد كل مشاهدة (مع debounce)
+      setMediaLikes(likes => { saveStats(likes, next); return likes; });
+      return next;
+    });
+  }
+}, [activeSlide]);
 
-  /* Auto-scroll thumbnail strip */
+  /* ─── Auto-scroll thumbnail strip ─── */
   useEffect(() => {
     if (thumbStripRef.current) {
       const strip = thumbStripRef.current;
@@ -394,9 +472,14 @@ export default function Home() {
     }
   }, [activeSlide]);
 
-  const handleLike = useCallback((realIdx) => {
-    setMediaLikes(prev => ({ ...prev, [realIdx]: (prev[realIdx] || 0) + 1 }));
-  }, []);
+const handleLike = useCallback((realIdx) => {
+  setMediaLikes(prev => {
+    const next = { ...prev, [realIdx]: (prev[realIdx] || 0) + 1 };
+    // احفظ بعد كل إعجاب (مع debounce)
+    setMediaViews(views => { saveStats(next, views); return views; });
+    return next;
+  });
+}, []);
 
   const openLightbox = useCallback((slideIdx) => {
     setLightboxIndex(slideIdx);
@@ -449,15 +532,14 @@ export default function Home() {
   const statsRef = useRef(null);
   const animated = useRef(false);
   const sliderRef = useRef(null);
-  const autoPlay = useRef(null);
+  // ─── لا autoPlay ref هنا — الانتقال التلقائي موقوف ───
 
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
   const isTablet = bp === "tablet";
 
   const NAV_H = isMobile ? 64 : isTablet ? 90 : 130;
-  const STICKY_TOP = NAV_H + 38 + 8;
-  const SLIDE_H = isMobile ? 220 : isTablet ? 300 : 400;
+  const STICKY_TOP = NAV_H + 42 + 8; // 42px = FullWidthNewsTicker height
 
   useEffect(() => {
     const obs = new IntersectionObserver(
@@ -488,7 +570,7 @@ export default function Home() {
     animated.current = false;
     setVisible({});
     const tm = setTimeout(() => {
-      setVisible((p) => ({ ...p, hero: true, stats: true, gallery: true }));
+      setVisible((p) => ({ ...p, hero: true, stats: true, gallery: true, features: true }));
       const els = document.querySelectorAll("[data-reveal]");
       const obs = new IntersectionObserver(
         (entries) => entries.forEach((e) => {
@@ -503,23 +585,12 @@ export default function Home() {
     return () => clearTimeout(tm);
   }, [lang]);
 
-  useEffect(() => {
-    if (filteredMedia.length === 0) return;
-    autoPlay.current = setInterval(
-      () => setActiveSlide((p) => (p + 1) % filteredMedia.length),
-      5000,
-    );
-    return () => clearInterval(autoPlay.current);
-  }, [filteredMedia.length]);
+  // ─── لا autoPlay useEffect — الانتقال التلقائي موقوف تماماً ───
 
+  /* ─── goTo: بدون إعادة تشغيل autoplay ─── */
   const goTo = (idx) => {
     if (!filteredMedia.length) return;
     setActiveSlide((idx + filteredMedia.length) % filteredMedia.length);
-    clearInterval(autoPlay.current);
-    autoPlay.current = setInterval(
-      () => setActiveSlide((p) => (p + 1) % filteredMedia.length),
-      5000,
-    );
   };
 
   const swipeVelocity = useRef(0);
@@ -933,30 +1004,6 @@ export default function Home() {
     }}>
       <ParticlesBackground />
 
-      {/* ECG BAR */}
-      <div style={{
-        height: 38, background: `linear-gradient(90deg,#EBF0F7,#F0F4F9,#EBF0F7)`,
-        overflow: "hidden", position: "relative",
-        borderBottom: `1px solid ${G}30`, zIndex: 2,
-      }}>
-        <svg width="100%" height="38" viewBox="0 0 1200 38" preserveAspectRatio="none" style={{ position: "absolute", top: 0 }}>
-          <path className="ecg-line" d="M0 19 L70 19 L86 4 L102 34 L118 19 L230 19 L246 2 L266 36 L282 19 L460 19 L476 4 L492 34 L508 19 L660 19 L676 2 L696 36 L712 19 L860 19 L876 4 L892 34 L908 19 L1200 19"
-            fill="none" stroke={B} strokeWidth="1.8" vectorEffect="non-scaling-stroke" opacity="0.25" />
-          <path className="ecg-line" d="M0 19 L70 19 L86 4 L102 34 L118 19 L230 19 L246 2 L266 36 L282 19 L460 19 L476 4 L492 34 L508 19 L660 19 L676 2 L696 36 L712 19 L860 19 L876 4 L892 34 L908 19 L1200 19"
-            fill="none" stroke={R} strokeWidth="1.4" vectorEffect="non-scaling-stroke" opacity="0.35" style={{ animationDelay: "0.4s" }} />
-        </svg>
-        <div style={{
-          position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)",
-          display: "flex", alignItems: "center", gap: 6, direction: "ltr",
-        }}>
-          <div style={{
-            width: 7, height: 7, borderRadius: "50%", background: "#22c55e",
-            animation: "pulse-dot 1s ease-in-out infinite",
-          }} />
-          <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b" }}>LIVE</span>
-        </div>
-      </div>
-
       {/* MAIN LAYOUT */}
       <div className="main-layout" style={{
         maxWidth: isMobile || isTablet ? "100%" : 1560,
@@ -1009,60 +1056,6 @@ export default function Home() {
               background: `linear-gradient(90deg,${R},${G},${R})`,
               backgroundSize: "200% 100%", animation: "shimmer-border 2.5s linear infinite",
             }} />
-          </div>
-
-          {/* STATS */}
-          <div ref={statsRef} data-reveal="stats" className="stats-grid" style={{
-            ...rev("stats", 0.05),
-            display: "grid", gridTemplateColumns: "repeat(4,1fr)",
-            gap: isMobile ? 10 : 14, marginBottom: isMobile ? 14 : 22,
-          }}>
-            {STAT_ICONS.map((ico, i) => (
-              <div key={i} className="stat-card"
-                onMouseEnter={() => setHoveredStat(i)}
-                onMouseLeave={() => setHoveredStat(null)}
-                style={{
-                  background: "#fff", borderRadius: isMobile ? 12 : 16,
-                  padding: isMobile ? "14px 10px" : "22px 16px",
-                  border: `1px solid ${STAT_COLORS[i]}18`,
-                  boxShadow: hoveredStat === i
-                    ? `0 12px 32px ${STAT_COLORS[i]}30,0 0 0 2px ${STAT_COLORS[i]}25`
-                    : `0 3px 14px rgba(27,54,93,0.06)`,
-                  position: "relative", overflow: "hidden", textAlign: "center",
-                }}
-              >
-                <div style={{
-                  position: "absolute", top: 0, left: 0, right: 0, height: 4,
-                  background: `linear-gradient(90deg,${STAT_COLORS[i]},${STAT_COLORS[i]}55)`,
-                  backgroundSize: "200% 100%",
-                  animation: hoveredStat === i ? "shimmer-border 1.5s linear infinite" : "none",
-                }} />
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: "linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.5) 50%,transparent 60%)",
-                  backgroundSize: "200% 100%",
-                  animation: hoveredStat === i ? "shimmer-card 0.8s ease" : "none",
-                  pointerEvents: "none",
-                }} />
-                <div style={{
-                  fontSize: isMobile ? 24 : 32, marginBottom: 6,
-                  display: "inline-block", transition: "transform 0.3s",
-                  transform: hoveredStat === i ? "scale(1.2) rotate(-8deg)" : "scale(1)",
-                }}>
-                  {ico}
-                </div>
-                <div style={{
-                  fontSize: isMobile ? 26 : 36, fontWeight: 900,
-                  color: STAT_COLORS[i], lineHeight: 1, marginBottom: 6,
-                  direction: "ltr", letterSpacing: "-1px",
-                }}>
-                  {statVals[i]}
-                </div>
-                <div style={{ fontSize: isMobile ? 10 : 12, color: "#64748b", fontWeight: 700, lineHeight: 1.4 }}>
-                  {t.statsLbls[i]}
-                </div>
-              </div>
-            ))}
           </div>
 
           {/* ══════════════ GALLERY ══════════════ */}
@@ -1171,11 +1164,19 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Slider */}
+              {/* ══════════════ SLIDER — نسبة 1:1 مع إصلاح الموبايل ══════════════ */}
               {filteredMedia.length > 0 && (
                 <div
                   ref={sliderRef}
-                  style={{ position: "relative", overflow: "hidden", userSelect: "none" }}
+                  style={{
+                    position: "relative",
+                    /* ─── نسبة 1:1 ─── */
+                    width: "100%",
+                    aspectRatio: "1 / 1",
+                    overflow: "hidden",
+                    userSelect: "none",
+                    background: "#000",
+                  }}
                   onMouseDown={e => onDragStart(e.clientX)}
                   onMouseMove={e => onDragMove(e.clientX)}
                   onMouseUp={onDragEnd}
@@ -1184,89 +1185,100 @@ export default function Home() {
                   onTouchMove={e => { e.preventDefault(); onDragMove(e.touches[0].clientX); }}
                   onTouchEnd={onDragEnd}
                 >
+                  {/* ─── Track: flex row، كل slide يأخذ 100% من العرض والارتفاع ─── */}
                   <div
                     className={`slide-track${isDragging ? " drag" : ""}`}
-                    style={{ transform: slideTranslate }}
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      width: "100%",
+                      height: "100%",
+                      transform: slideTranslate,
+                      transition: isDragging ? "none" : "transform 0.45s cubic-bezier(0.22,1,0.36,1)",
+                      willChange: "transform",
+                    }}
                   >
                     {filteredMedia.map((item, i) => {
                       const realIdx = mediaItems.indexOf(item);
                       const meta = getMeta(item, realIdx);
                       const isVideoItem = item.type === "video";
                       return (
-                        <div key={item.id ?? i} style={{
-                          minWidth: "100%",
-                          position: "relative",
-                          flexShrink: 0,
-                          background: "#000",
-                          minHeight: isMobile ? 200 : 260,
-                          maxHeight: "80vh",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          overflow: "hidden",
-                        }}>
-                         {isVideoItem ? (
-  <div style={{ width: "100%", height: "100%", position: "relative", background: "#000" }}>
-    <video
-      src={item.src}
-      autoPlay
-      playsInline
-      controls
-      preload="auto"
-      ref={(videoEl) => {
-        if (videoEl) {
-          // محاولة التشغيل بدون كتم، وإذا حظره المتصفح يتم تجاوزه بسلاسة
-          videoEl.play().catch(() => {
-            videoEl.muted = true;
-            videoEl.play();
-          });
-        }
-      }}
-      style={{
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-        display: "block",
-      }}
-      onEnded={() => goTo(activeSlide + 1)}
-    />
-    <button
-      onClick={(e) => { e.stopPropagation(); openLightbox(i); }}
-      style={{
-        position: "absolute",
-        top: 12,
-        [isRtl ? "left" : "right"]: 12,
-        background: "rgba(0,0,0,0.7)",
-        color: "#fff",
-        border: `1.5px solid ${G}`,
-        borderRadius: 20,
-        padding: "6px 14px",
-        fontSize: 12,
-        fontWeight: 800,
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        zIndex: 5,
-        backdropFilter: "blur(4px)",
-        fontFamily: "'Cairo',sans-serif",
-      }}
-    >
-      <span>🔍</span> {isRtl ? "تكبير / صوت كامل" : "Full View"}
-    </button>
-  </div>
-) : (
-  <div style={{
-    position: "relative",
-    width: "100%",
-    minHeight: isMobile ? 200 : 260,
-    maxHeight: "80vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    background: "#000",
-  }}>
+                        /* ─── كل slide: عرض ثابت 100% من الـ container، ارتفاع 100% ─── */
+                        <div
+                          key={item.id ?? i}
+                          style={{
+                            minWidth: "100%",
+                            width: "100%",
+                            height: "100%",
+                            flexShrink: 0,
+                            position: "relative",
+                            background: "#000",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {isVideoItem ? (
+                            <div style={{ width: "100%", height: "100%", position: "relative", background: "#000" }}>
+                              <video
+                                src={item.src}
+                                autoPlay
+                                playsInline
+                                controls
+                                preload="auto"
+                                ref={(videoEl) => {
+                                  if (videoEl) {
+                                    videoEl.play().catch(() => {
+                                      videoEl.muted = true;
+                                      videoEl.play();
+                                    });
+                                  }
+                                }}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover",
+                                  display: "block",
+                                }}
+                                onEnded={() => goTo(activeSlide + 1)}
+                              />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openLightbox(i); }}
+                                style={{
+                                  position: "absolute",
+                                  top: 12,
+                                  [isRtl ? "left" : "right"]: 12,
+                                  background: "rgba(0,0,0,0.7)",
+                                  color: "#fff",
+                                  border: `1.5px solid ${G}`,
+                                  borderRadius: 20,
+                                  padding: "6px 14px",
+                                  fontSize: 12,
+                                  fontWeight: 800,
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  zIndex: 5,
+                                  backdropFilter: "blur(4px)",
+                                  fontFamily: "'Cairo',sans-serif",
+                                }}
+                              >
+                                <span>🔍</span> {isRtl ? "تكبير / صوت كامل" : "Full View"}
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{
+                              position: "relative",
+                              width: "100%",
+                              height: "100%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              overflow: "hidden",
+                              background: "#000",
+                            }}>
                               {/* Blurred background */}
                               <img
                                 src={proxyImg(item.src)}
@@ -1284,7 +1296,7 @@ export default function Home() {
                                   userSelect: "none",
                                 }}
                               />
-                              {/* Actual image */}
+                              {/* Actual image — contain داخل الـ 1:1 */}
                               <img
                                 src={proxyImg(item.src)}
                                 alt={meta.caption}
@@ -1293,7 +1305,7 @@ export default function Home() {
                                 style={{
                                   position: "relative",
                                   maxWidth: "100%",
-                                  maxHeight: "80vh",
+                                  maxHeight: "100%",
                                   width: "auto",
                                   height: "auto",
                                   objectFit: "contain",
@@ -1365,13 +1377,23 @@ export default function Home() {
                             </div>
 
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                              {/* Dots */}
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                                 {filteredMedia.map((_, di) => (
-                                  <div key={di} style={{
-                                    width: di === i ? 18 : 6, height: 6, borderRadius: 4,
-                                    background: di === i ? G : "rgba(255,255,255,0.4)",
-                                    transition: "all .35s",
-                                  }} />
+                                  <button
+                                    key={di}
+                                    onClick={() => goTo(di)}
+                                    style={{
+                                      width: di === activeSlide ? 18 : 6,
+                                      height: 6,
+                                      borderRadius: 4,
+                                      background: di === activeSlide ? G : "rgba(255,255,255,0.4)",
+                                      border: "none",
+                                      cursor: "pointer",
+                                      transition: "all .35s",
+                                      padding: 0,
+                                    }}
+                                  />
                                 ))}
                               </div>
 
@@ -1417,14 +1439,7 @@ export default function Home() {
                     </button>
                   ))}
 
-                  {/* Progress bar */}
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 4, background: `${B}15`, zIndex: 5 }}>
-                    <div key={activeSlide} style={{
-                      height: "100%",
-                      background: `linear-gradient(90deg,${G},${R})`,
-                      animation: "progress-bar 5s linear",
-                    }} />
-                  </div>
+                  {/* لا progress bar لأن الانتقال التلقائي موقوف */}
                 </div>
               )}
 
@@ -1511,6 +1526,210 @@ export default function Home() {
               )}
             </div>
           )}
+
+          {/* ══════════════ FEATURE CARDS ══════════════ */}
+          {(() => {
+            const NAVY = "#001B2A";
+            const GOLD = "#D4AF37";
+            const GOLD_L = "#F4D79B";
+            const SLATE = "#2C3E50";
+            const FEATURES = [
+              {
+                icon: "globe",
+                ar: "خبرة عالمية",
+                en: "Global Expertise",
+                subAr: "متحدثون من أكثر من 5 دول",
+                subEn: "Speakers from 5+ countries",
+              },
+              {
+                icon: "handshake",
+                ar: "شراكة طبية",
+                en: "Medical Partnership",
+                subAr: "شراكات مؤسسية دولية",
+                subEn: "International institutional partnerships",
+              },
+              {
+                icon: "medal",
+                ar: "معايير عالية",
+                en: "High Standards",
+                subAr: "مراجعة علمية محكّمة",
+                subEn: "Peer-reviewed scientific standards",
+              },
+              {
+                icon: "microscope",
+                ar: "خبرة علمية",
+                en: "Scientific Excellence",
+                subAr: "15+ جلسة علمية متخصصة",
+                subEn: "15+ specialized scientific sessions",
+              },
+            ];
+            return (
+              <div
+                data-reveal="features"
+                style={{
+                  ...rev("features", 0.08),
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)",
+                  gap: isMobile ? 10 : 14,
+                  marginBottom: isMobile ? 14 : 24,
+                }}
+              >
+                {FEATURES.map((f, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      background: "#fff",
+                      borderRadius: isMobile ? 12 : 16,
+                      border: `1px solid ${GOLD}30`,
+                      padding: isMobile ? "16px 12px" : "22px 18px",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      textAlign: "center",
+                      gap: isMobile ? 8 : 10,
+                      boxShadow: "0 3px 14px rgba(0,27,42,0.07)",
+                      transition: "transform 0.26s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.26s, border-color 0.26s",
+                      cursor: "default",
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = "translateY(-6px) scale(1.03)";
+                      e.currentTarget.style.boxShadow = `0 14px 34px ${GOLD}28, 0 0 0 1.5px ${GOLD}50`;
+                      e.currentTarget.style.borderColor = `${GOLD}60`;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = "";
+                      e.currentTarget.style.boxShadow = "0 3px 14px rgba(0,27,42,0.07)";
+                      e.currentTarget.style.borderColor = `${GOLD}30`;
+                    }}
+                  >
+                    {/* Gold accent top line */}
+                    <div style={{
+                      position: "relative",
+                      width: isMobile ? 40 : 50,
+                      height: isMobile ? 40 : 50,
+                      borderRadius: "50%",
+                      border: `1.5px solid ${GOLD}45`,
+                      background: `radial-gradient(circle at 35% 35%, ${GOLD}18, ${GOLD}06)`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}>
+                      <IconGlyph type={f.icon} color={GOLD} />
+                    </div>
+                    <div>
+                      <div style={{
+                        fontSize: isMobile ? 12 : 14,
+                        fontWeight: 900,
+                        color: NAVY,
+                        marginBottom: 3,
+                        lineHeight: 1.3,
+                      }}>
+                        {isRtl ? f.ar : f.en}
+                      </div>
+                      {!isMobile && (
+                        <div style={{
+                          fontSize: 11,
+                          color: "#64748b",
+                          fontWeight: 600,
+                          lineHeight: 1.4,
+                        }}>
+                          {isRtl ? f.subAr : f.subEn}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{
+                      width: "30px",
+                      height: "2px",
+                      borderRadius: "2px",
+                      background: `linear-gradient(90deg, ${GOLD}, ${GOLD_L})`,
+                    }} />
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* ══════════════ STATS — relocated below feature cards ══════════════ */}
+          <div ref={statsRef} data-reveal="stats" style={{
+            ...rev("stats", 0.1),
+            background: "#fff",
+            borderRadius: isMobile ? 14 : 20,
+            border: `1px solid ${G}22`,
+            boxShadow: "0 4px 20px rgba(27,54,93,0.07)",
+            overflow: "hidden",
+            marginBottom: isMobile ? 14 : 28,
+          }}>
+            {/* Section header */}
+            <div style={{
+              padding: isMobile ? "12px 16px" : "16px 24px",
+              background: `linear-gradient(135deg, ${B}06, ${G}08)`,
+              borderBottom: `1px solid ${B}0c`,
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 10,
+                background: `${G}15`, border: `1px solid ${G}30`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16,
+              }}>📊</div>
+              <div>
+                <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 900, color: B }}>
+                  {isRtl ? "نبذة عن المؤتمر" : "Conference Overview"}
+                </div>
+                {!isMobile && (
+                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                    {isRtl ? "أرقام وإحصائيات المؤتمر الثاني عشر" : "12th Conference key statistics"}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{
+              display: "grid", gridTemplateColumns: "repeat(4,1fr)",
+              gap: 0,
+            }}>
+              {STAT_ICONS.map((ico, i) => (
+                <div key={i} className="stat-card"
+                  onMouseEnter={() => setHoveredStat(i)}
+                  onMouseLeave={() => setHoveredStat(null)}
+                  style={{
+                    padding: isMobile ? "16px 10px" : "24px 16px",
+                    borderRight: i < 3 ? `1px solid ${B}08` : "none",
+                    background: hoveredStat === i
+                      ? `linear-gradient(135deg, ${STAT_COLORS[i]}06, #fff)`
+                      : "#fff",
+                    position: "relative", overflow: "hidden", textAlign: "center",
+                    transition: "background 0.25s",
+                  }}
+                >
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: 3,
+                    background: hoveredStat === i
+                      ? `linear-gradient(90deg,${STAT_COLORS[i]},${STAT_COLORS[i]}55)`
+                      : "transparent",
+                    transition: "background 0.25s",
+                  }} />
+                  <div style={{
+                    fontSize: isMobile ? 22 : 28, marginBottom: 6,
+                    display: "inline-block", transition: "transform 0.3s",
+                    transform: hoveredStat === i ? "scale(1.18) rotate(-8deg)" : "scale(1)",
+                  }}>
+                    {ico}
+                  </div>
+                  <div style={{
+                    fontSize: isMobile ? 24 : 34, fontWeight: 900,
+                    color: STAT_COLORS[i], lineHeight: 1, marginBottom: 5,
+                    direction: "ltr", letterSpacing: "-1px",
+                  }}>
+                    {statVals[i]}
+                  </div>
+                  <div style={{ fontSize: isMobile ? 10 : 11, color: "#64748b", fontWeight: 700, lineHeight: 1.4 }}>
+                    {t.statsLbls[i]}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* SidebarLeft on mobile/tablet */}
           {(isMobile || isTablet) && (

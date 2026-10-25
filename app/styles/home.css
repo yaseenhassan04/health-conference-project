@@ -49,3 +49,19 @@
           .thumb-item{width:60px!important;height:42px!important;}
           .slider-arrow{width:36px!important;height:36px!important;font-size:18px!important;}
         }
+
+        /* ── Feature Cards ── */
+        @keyframes feature-fade-up {
+          from { opacity: 0; transform: translateY(22px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Responsive: stats grid inside the new card ── */
+        @media(max-width:639px) {
+          .stats-overview-grid { grid-template-columns: repeat(2,1fr) !important; }
+        }
+
+        /* ── Ensure full-width ticker inside sticky nav works ── */
+        @media(max-width:639px) {
+          .fwnt-label-text { display: none; }
+        }

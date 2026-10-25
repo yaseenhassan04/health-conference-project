@@ -5,8 +5,31 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useAuth, ROLE_CONFIG, PAGE_META } from "./layout";
+import { useAuth, ROLE_CONFIG as ROLE_CONFIG_IMPORTED, PAGE_META as PAGE_META_IMPORTED } from "./layout";
 import { useState } from "react";
+
+/* ─── Fallback محلي في حال فشل الـ import من layout ─── */
+const ROLE_CONFIG_FALLBACK = {
+  admin:  { label: "مدير النظام",   icon: "🛡️", pages: ["library","submission","gallery","news","users"] },
+  doctor: { label: "طبيب / باحث",   icon: "🩺", pages: ["library","submission"] },
+  media:  { label: "مسؤول الإعلام", icon: "📸", pages: ["gallery","news"] },
+};
+const PAGE_META_FALLBACK = {
+  library:    { label: "المكتبة الطبية",   icon: "📚", path: "/dashboard/library" },
+  submission: { label: "تقديم بحث",        icon: "📋", path: "/dashboard/submission" },
+  gallery:    { label: "معرض الصور",       icon: "🖼️", path: "/dashboard/gallery" },
+  news:       { label: "الأخبار",           icon: "📰", path: "/dashboard/news" },
+  users:      { label: "إدارة المستخدمين", icon: "👥", path: "/dashboard/users" },
+};
+
+/* ─── استخدم المستورد إذا كان صحيحاً، وإلا الـ fallback ─── */
+const ROLE_CONFIG = (ROLE_CONFIG_IMPORTED && typeof ROLE_CONFIG_IMPORTED === "object" && ROLE_CONFIG_IMPORTED.admin)
+  ? ROLE_CONFIG_IMPORTED
+  : ROLE_CONFIG_FALLBACK;
+
+const PAGE_META = (PAGE_META_IMPORTED && typeof PAGE_META_IMPORTED === "object" && PAGE_META_IMPORTED.library)
+  ? PAGE_META_IMPORTED
+  : PAGE_META_FALLBACK;
 
 const B = "#1B365D", R = "#C8102E", G = "#D4AF37";
 
@@ -191,9 +214,38 @@ function StatCard({ label, value, icon, color }) {
 /* ─── الصفحة الرئيسية ─── */
 export default function DashboardHome() {
   const router = useRouter();
-  const { user, role } = useAuth() || {};
-  const roleConfig = ROLE_CONFIG[role] || ROLE_CONFIG.doctor;
-  const allowedPages = roleConfig.pages || [];
+
+  // ─── guard: useAuth قد يرجع null أثناء التحميل ───
+  const auth = useAuth();
+
+  if (!auth) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: "100vh", background: "#F5F7FB",
+        fontFamily: "'Cairo', sans-serif", direction: "rtl",
+        flexDirection: "column", gap: 16,
+      }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: "50%",
+          border: "4px solid #D4AF37", borderTopColor: "transparent",
+          animation: "spin 0.8s linear infinite",
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <span style={{ color: "#64748b", fontSize: 14, fontWeight: 600 }}>جاري التحميل…</span>
+      </div>
+    );
+  }
+
+  const user         = auth.user   ?? null;
+  const role         = auth.role   ?? "doctor";
+  // ─── allowedPages يأتي مباشرة من الـ context (محسوب في layout) ───
+  const allowedPages = auth.allowedPages ?? [];
+
+  // ─── roleConfig للعرض فقط (label + icon) — مع fallback آمن ───
+  const roleConfig = (ROLE_CONFIG && ROLE_CONFIG[role])
+    ? ROLE_CONFIG[role]
+    : { label: "مستخدم", icon: "👤", pages: [] };
 
   /* إحصائيات وهمية — اربطها لاحقاً بـ API */
   const statsMap = {
