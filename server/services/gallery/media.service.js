@@ -1,3 +1,4 @@
+// server/services/gallery/media.service.js
 import { put, list, del } from '@vercel/blob';
 import { ApiError } from '@/server/lib/apiError';
 
@@ -5,16 +6,19 @@ const DB_BLOB_PATH = 'gallery/db.json';
 
 async function readDb() {
   try {
-    // ابحث عن الملف في الـ Blob
     const { blobs } = await list({ prefix: DB_BLOB_PATH });
     if (!blobs.length) return { items: [] };
 
-    const res = await fetch(blobs[0].url);
+    // ← no-store عشان ما يرجع نسخة قديمة من الـ CDN
+    const res = await fetch(blobs[0].url, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store' },
+    });
+
     const data = await res.json();
+    let items = Array.isArray(data?.items) ? data.items
+              : Array.isArray(data) ? data : [];
 
-    let items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-
-    // تنظيف العناصر التالفة
     items = items.filter(
       (item) =>
         item?.src &&
@@ -29,14 +33,19 @@ async function readDb() {
   }
 }
 
-// media.service.js
 async function writeDb(items) {
   try {
+    // احذف كل النسخ القديمة أولاً
+    const { blobs } = await list({ prefix: DB_BLOB_PATH });
+    if (blobs.length > 0) {
+      await Promise.all(blobs.map((b) => del(b.url)));
+    }
+
     await put(DB_BLOB_PATH, JSON.stringify({ items }, null, 2), {
       access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
-      allowOverwrite: true, 
+      allowOverwrite: true,
     });
   } catch (err) {
     console.error('❌ فشل كتابة البيانات:', err.message);
