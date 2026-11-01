@@ -321,7 +321,7 @@ export default function BronchoscopyRegistration() {
                 fontSize: 12, color: "#065f46", lineHeight: 1.8,
               }}>
                 ✅ التسجيل المجاني للأوائل العشرة<br />
-                📍 مستشفى ناصر · غزة · 8 نوفمبر 2026<br />
+                📍 مستشفى ناصر · خانيونس · 8 نوفمبر 2026<br />
                 📞 سيتم التواصل معك للتأكيد عبر الواتساب
               </div>
 
