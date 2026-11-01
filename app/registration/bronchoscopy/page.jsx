@@ -211,7 +211,7 @@ export default function BronchoscopyRegistration() {
                 تسجيل ورشة تنظير القصبات الهوائية
               </div>
               <div style={{ fontSize: 13, color: "#64748b" }}>
-                د. عبدالرحمن حسين · 7–8 نوفمبر 2026 · مستشفى ناصر
+                د. عبدالرحمن حسين · 8 نوفمبر 2026 · مستشفى ناصر
               </div>
             </div>
 
@@ -321,7 +321,7 @@ export default function BronchoscopyRegistration() {
                 fontSize: 12, color: "#065f46", lineHeight: 1.8,
               }}>
                 ✅ التسجيل المجاني للأوائل العشرة<br />
-                📍 مستشفى ناصر · غزة · 7–8 نوفمبر 2026<br />
+                📍 مستشفى ناصر · غزة · 8 نوفمبر 2026<br />
                 📞 سيتم التواصل معك للتأكيد عبر الواتساب
               </div>
 
