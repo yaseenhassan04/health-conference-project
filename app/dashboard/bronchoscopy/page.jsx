@@ -123,7 +123,7 @@ export default function BronchoscopyDashboard() {
               🫁 ورشة تنظير القصبات الهوائية
             </div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
-              Bronchoscopy Workshop · 8 نوفمبر 2026 · د. عبدالرحمن حسين
+              Bronchoscopy Workshop · 7–8 نوفمبر 2026 · د. عبدالرحمن حسين
             </div>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
