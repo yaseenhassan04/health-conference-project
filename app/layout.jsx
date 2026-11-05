@@ -21,7 +21,7 @@ export default function RootLayout({ children }) {
     <html lang="ar">
       <body className={tajawal.className}>
         <LangProvider>
-          <AnnouncementPopup imageSrc="/bronchoscopy-announcement.png" />
+          <AnnouncementPopup imageSrc="/workshops-announcement.png" />
           {/* << أضف هذا */}
           <ClientNavbar />
           <main style={{ padding: 0, margin: 0, width: "100%" }}>

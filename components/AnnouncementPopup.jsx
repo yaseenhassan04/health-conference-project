@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 
 export default function AnnouncementPopup({
-  imageSrc = "/bronchoscopy-announcement.png",
-  imageAlt = "ورشة تنظير القصبات الهوائية",
+  imageSrc = "/workshops-announcement.png",   // ← الصورة الجديدة (اللي فيها الورشتين)
+  imageAlt = "ورش عمل ما قبل المؤتمر",
   showOnce = true,
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -13,21 +13,13 @@ export default function AnnouncementPopup({
 
   useEffect(() => {
     setMounted(true);
-    if (!showOnce) {
-      setIsOpen(true);
-      return;
-    }
-    const alreadySeen = sessionStorage.getItem("announcement_seen");
-    if (!alreadySeen) {
-      setIsOpen(true);
-    }
+    if (!showOnce) { setIsOpen(true); return; }
+    if (!sessionStorage.getItem("workshops_popup_seen")) setIsOpen(true);
   }, [showOnce]);
 
   const handleClose = () => {
     setIsOpen(false);
-    if (showOnce) {
-      sessionStorage.setItem("announcement_seen", "true");
-    }
+    if (showOnce) sessionStorage.setItem("workshops_popup_seen", "true");
   };
 
   if (!mounted || !isOpen) return null;
@@ -36,100 +28,82 @@ export default function AnnouncementPopup({
     <div
       onClick={handleClose}
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 9999,
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        backgroundColor: "rgba(0, 0, 0, 0.45)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "16px",
+        position: "fixed", inset: 0, zIndex: 9999,
+        backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+        backgroundColor: "rgba(0,0,0,0.5)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 16,
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
         style={{
-          position: "relative",
-          maxWidth: "480px",
-          width: "100%",
-          borderRadius: "16px",
-          overflow: "hidden",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+          position: "relative", maxWidth: 500, width: "100%",
+          borderRadius: 18, overflow: "hidden",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
           backgroundColor: "#fff",
         }}
       >
+        {/* زر الإغلاق */}
         <button
           onClick={handleClose}
           aria-label="إغلاق"
           style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            width: "34px",
-            height: "34px",
-            borderRadius: "50%",
-            border: "none",
-            backgroundColor: "rgba(0,0,0,0.55)",
-            color: "#fff",
-            fontSize: "18px",
-            lineHeight: 1,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            position: "absolute", top: 10, right: 10,
+            width: 34, height: 34, borderRadius: "50%",
+            border: "none", backgroundColor: "rgba(0,0,0,0.55)",
+            color: "#fff", fontSize: 18, lineHeight: 1, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
             zIndex: 1,
           }}
-        >
-          ×
-        </button>
+        >×</button>
 
+        {/* الصورة */}
         <Image
           src={imageSrc}
           alt={imageAlt}
-          width={1280}
-          height={720}
+          width={1080}
+          height={1080}
           style={{ width: "100%", height: "auto", display: "block" }}
           priority
         />
 
-        <a
-          href="/registration/bronchoscopy"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "10px",
-            width: "100%",
-            padding: "14px 20px",
-            backgroundColor: "#0c4a6e",
-            color: "#fff",
-            fontSize: "17px",
-            fontWeight: "700",
-            textDecoration: "none",
-            letterSpacing: "0.3px",
-            transition: "background-color 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#075985")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0c4a6e")}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {/* أزرار التسجيل */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr",
+          gap: 0, fontFamily: "'Cairo',sans-serif",
+        }}>
+          <a
+            href="/registration/workshops?w=bronchoscopy"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: 8, padding: "14px 12px",
+              backgroundColor: "#1B365D", color: "#fff",
+              fontSize: 15, fontWeight: 800, textDecoration: "none",
+              borderTop: "3px solid #C9A227",
+              transition: "background .2s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = "#2a4a7a"}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = "#1B365D"}
           >
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z" />
-          </svg>
-          🫁 سجّل الآن في ورشة Bronchoscopy
-        </a>
+            🫁 تسجيل 8 نوفمبر
+          </a>
+          <a
+            href="/registration/workshops?w=pocus"
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              gap: 8, padding: "14px 12px",
+              backgroundColor: "#C9A227", color: "#fff",
+              fontSize: 15, fontWeight: 800, textDecoration: "none",
+              borderTop: "3px solid #1B365D",
+              transition: "background .2s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = "#a87d10"}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = "#C9A227"}
+          >
+            📡 تسجيل 9 نوفمبر
+          </a>
+        </div>
       </div>
     </div>
   );

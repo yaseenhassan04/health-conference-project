@@ -136,7 +136,7 @@ export default function BronchoscopyRegistration() {
           marginBottom: 32, border: `2px solid ${G}40`,
         }}>
           <img
-            src="/bronchoscopy-announcement.png"
+            src="/workshops-announcement.png"
             alt="ورشة تنظير القصبات الهوائية"
             style={{ width: "100%", display: "block" }}
             onError={e => { e.currentTarget.style.display = "none"; }}

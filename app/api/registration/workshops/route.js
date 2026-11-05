@@ -1,177 +1,116 @@
+// المسار: app/api/registration/workshops/route.js
 import { NextResponse } from "next/server";
-import prisma from "@/server/db/prisma";
-const WORKSHOP_NAMES = {
-  w1: "Safe ED Skills",
-  w2: "Challenge Cases in DM",
-  w3: "Electrolytes Is Not Just a Number",
-  w4: "Gastroenterology Knowledge & Skills",
-  w5: "POCUS",
+import { prisma } from "@/lib/prisma";
+
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "samoud2025";
+
+const WORKSHOPS = {
+  bronchoscopy: { capacity: 10 },   // الأحد 8 نوفمبر
+  pocus:        { capacity: 10 },   // الإثنين 9 نوفمبر
 };
 
-// ── POST: تسجيل جديد ──────────────────────────────────────
-export async function POST(req) {
+function buildStats(counts) {
+  return Object.fromEntries(
+    Object.entries(WORKSHOPS).map(([key, w]) => {
+      const total = counts[key] || 0;
+      return [key, {
+        total,
+        capacity: w.capacity,
+        remaining: Math.max(0, w.capacity - total),
+        isFull: total >= w.capacity,
+      }];
+    })
+  );
+}
+
+// GET — بدون توكن: إحصائيات فقط | مع توكن: إحصائيات + كل المسجلين
+export async function GET(req) {
   try {
-    const body = await req.json();
-    const {
-      fullNameAr,
-      fullNameEn,
-      phone,
-      whatsapp,
-      email,
-      specialty,
-      workplace,
-      yearsExp,
-      workshops,
-    } = body;
+    const token = req.headers.get("x-admin-token");
+    if (token && token !== ADMIN_TOKEN)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 1. تحقق من الحقول المطلوبة
-    if (
-      !fullNameAr?.trim() ||
-      !fullNameEn?.trim() ||
-      !phone?.trim() ||
-      !whatsapp?.trim() ||
-      !email?.trim() ||
-      !specialty?.trim() ||
-      !workplace?.trim() ||
-      !workshops?.length
-    ) {
-      return NextResponse.json(
-        { error: "يرجى تعبئة جميع الحقول المطلوبة" },
-        { status: 400 }
-      );
-    }
-
-    // 2. تحقق من الحد الأقصى للورشات
-    if (workshops.length > 2) {
-      return NextResponse.json(
-        { error: "لا يمكن التسجيل في أكثر من ورشتين" },
-        { status: 400 }
-      );
-    }
-
-    // 3. تحقق من ورشات صالحة
-    const validIds = Object.keys(WORKSHOP_NAMES);
-    const invalidWorkshops = workshops.filter((id) => !validIds.includes(id));
-    if (invalidWorkshops.length > 0) {
-      return NextResponse.json(
-        { error: "ورشة عمل غير صالحة" },
-        { status: 400 }
-      );
-    }
-
-    // 4. تحقق من البريد الإلكتروني مسبقاً
-    const existing = await prisma.workshopRegistration.findUnique({
-      where: { email: email.toLowerCase().trim() },
+    const grouped = await prisma.workshopReg.groupBy({
+      by: ["workshop"],
+      _count: { _all: true },
     });
-    if (existing) {
-      return NextResponse.json(
-        { error: "هذا البريد الإلكتروني مسجل مسبقاً في ورشات العمل" },
-        { status: 409 }
-      );
-    }
+    const counts = Object.fromEntries(grouped.map(g => [g.workshop, g._count._all]));
+    const stats = buildStats(counts);
 
-    // 5. تحقق من سعة كل ورشة (20 مقعد)
-    for (const workshopId of workshops) {
-      // نجيب كل السجلات ونفلتر بـ JSON.parse لتفادي خطأ contains (مثلاً w1 يلتقط w10)
-      const allRegs = await prisma.workshopRegistration.findMany({
-        select: { workshops: true },
-      });
-      const count = allRegs.filter((r) => {
-        try { return JSON.parse(r.workshops).includes(workshopId); } catch { return false; }
-      }).length;
-      if (count >= 20) {
-        return NextResponse.json(
-          {
-            error: `ورشة "${WORKSHOP_NAMES[workshopId]}" امتلأت — لا توجد أماكن شاغرة`,
-          },
-          { status: 409 }
-        );
-      }
-    }
+    if (!token) return NextResponse.json({ stats });
 
-    // 6. حفظ التسجيل
-    const registration = await prisma.workshopRegistration.create({
-      data: {
-        fullNameAr: fullNameAr.trim(),
-        fullNameEn: fullNameEn.trim(),
-        phone: phone.trim(),
-        whatsapp: whatsapp.trim(),
-        email: email.toLowerCase().trim(),
-        specialty,
-        workplace: workplace.trim(),
-        yearsExp: yearsExp?.toString() || "",
-        workshops: JSON.stringify(workshops),
-      },
-    });
-
-    return NextResponse.json(
-      { success: true, id: registration.id },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error("[POST /api/registration/workshops]", error);
-    return NextResponse.json(
-      { error: "حدث خطأ في الخادم، يرجى المحاولة مجدداً" },
-      { status: 500 }
-    );
+    const items = await prisma.workshopReg.findMany({ orderBy: { createdAt: "desc" } });
+    return NextResponse.json({ stats, items });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "فشل جلب البيانات" }, { status: 500 });
   }
 }
 
-// ── GET: إحصائيات الداشبورد ───────────────────────────────
-export async function GET() {
+// POST — تسجيل في ورشة محددة
+export async function POST(req) {
   try {
-    const all = await prisma.workshopRegistration.findMany({
-      orderBy: { createdAt: "desc" },
+    const body = await req.json();
+    const { workshop, fullNameAr, fullNameEn, email, whatsapp, specialty, workplace } = body;
+
+    if (!WORKSHOPS[workshop])
+      return NextResponse.json({ error: "الورشة غير صحيحة" }, { status: 400 });
+    if (!fullNameAr?.trim())
+      return NextResponse.json({ error: "الاسم الكامل بالعربي مطلوب" }, { status: 400 });
+    if (!email?.trim())
+      return NextResponse.json({ error: "البريد الإلكتروني مطلوب" }, { status: 400 });
+    if (!whatsapp?.trim())
+      return NextResponse.json({ error: "رقم الواتساب مطلوب" }, { status: 400 });
+    if (!specialty?.trim())
+      return NextResponse.json({ error: "التخصص مطلوب" }, { status: 400 });
+    if (!workplace?.trim())
+      return NextResponse.json({ error: "جهة العمل مطلوبة" }, { status: 400 });
+
+    // فحص السعة
+    const count = await prisma.workshopReg.count({ where: { workshop } });
+    if (count >= WORKSHOPS[workshop].capacity)
+      return NextResponse.json({ error: "عذراً، امتلأت مقاعد هذه الورشة" }, { status: 400 });
+
+    // فحص التسجيل المسبق في نفس الورشة
+    const cleanEmail = email.toLowerCase().trim();
+    const existing = await prisma.workshopReg.findFirst({
+      where: { workshop, email: cleanEmail },
+    });
+    if (existing)
+      return NextResponse.json({ error: "هذا البريد مسجل مسبقاً في هذه الورشة" }, { status: 400 });
+
+    const registration = await prisma.workshopReg.create({
+      data: {
+        workshop,
+        fullNameAr: fullNameAr.trim(),
+        fullNameEn: fullNameEn?.trim() || "",
+        email: cleanEmail,
+        whatsapp: whatsapp.trim(),
+        specialty: specialty.trim(),
+        workplace: workplace.trim(),
+      },
     });
 
-    // عدد المسجلين لكل ورشة
-    const workshopCounts = {};
-    Object.keys(WORKSHOP_NAMES).forEach((id) => {
-      const idCount = all.filter((r) => {
-        try { return JSON.parse(r.workshops).includes(id); } catch { return false; }
-      }).length;
-      workshopCounts[id] = {
-        name: WORKSHOP_NAMES[id],
-        count: idCount,
-        capacity: 20,
-        available: 20 - idCount,
-      };
-    });
+    return NextResponse.json({ success: true, id: registration.id }, { status: 201 });
+  } catch (err) {
+    if (err?.code === "P2002")
+      return NextResponse.json({ error: "هذا البريد مسجل مسبقاً في هذه الورشة" }, { status: 400 });
+    console.error(err);
+    return NextResponse.json({ error: "حدث خطأ، حاول مرة أخرى" }, { status: 500 });
+  }
+}
 
-    // توزيع حسب التخصص
-    const specialtyCounts = {};
-    all.forEach((r) => {
-      specialtyCounts[r.specialty] = (specialtyCounts[r.specialty] || 0) + 1;
-    });
+// DELETE — حذف تسجيل
+export async function DELETE(req) {
+  const token = req.headers.get("x-admin-token");
+  if (token !== ADMIN_TOKEN)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // توزيع حسب عدد الورشات المختارة
-    const oneWorkshop = all.filter(
-      (r) => JSON.parse(r.workshops).length === 1
-    ).length;
-    const twoWorkshops = all.filter(
-      (r) => JSON.parse(r.workshops).length === 2
-    ).length;
-
-    return NextResponse.json({
-      total: all.length,
-      workshopCounts,
-      specialtyCounts,
-      oneWorkshop,
-      twoWorkshops,
-      recent: all.map((r) => ({
-        id: r.id,
-        fullNameAr: r.fullNameAr,
-        fullNameEn: r.fullNameEn,
-        email: r.email,
-        whatsapp: r.whatsapp,
-        specialty: r.specialty,
-        workplace: r.workplace,
-        workshops: JSON.parse(r.workshops),
-        createdAt: r.createdAt,
-      })),
-    });
-  } catch (error) {
-    console.error("[GET /api/registration/workshops]", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  const id = Number(new URL(req.url).searchParams.get("id"));
+  try {
+    await prisma.workshopReg.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "فشل الحذف" }, { status: 500 });
   }
 }

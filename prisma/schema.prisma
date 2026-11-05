@@ -177,3 +177,18 @@ model BronchoscopyRegistration {
 
   @@map("bronchoscopy_registrations")
 }
+
+model WorkshopReg {
+  id         Int      @id @default(autoincrement())
+  workshop   String
+  fullNameAr String
+  fullNameEn String   @default("")
+  email      String
+  whatsapp   String
+  specialty  String
+  workplace  String
+  createdAt  DateTime @default(now())
+
+  @@unique([workshop, email])
+  @@map("workshop_registrations")
+}
