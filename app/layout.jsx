@@ -4,6 +4,7 @@ import "./globals.css";
 import ClientNavbar from "@/client/components/ClientNavbar";
 import { LangProvider } from "@/client/context/LangContext";
 import AnnouncementPopup from "@/components/AnnouncementPopup"; // << أضف هذا
+import { Analytics } from "@vercel/analytics/next";
 
 const tajawal = Tajawal({
   subsets: ["arabic"],
@@ -28,6 +29,7 @@ export default function RootLayout({ children }) {
             {children}
           </main>
         </LangProvider>
+        <Analytics />
       </body>
     </html>
   );
