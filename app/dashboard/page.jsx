@@ -9,10 +9,15 @@ import { useState } from "react";
 
 /* ─── Fallback محلي ─── */
 const ROLE_CONFIG_FALLBACK = {
-  admin:  { label: "مدير النظام",   icon: "🛡️", pages: ["library","abstracts","gallery","news","users","videos","live","workshops"] },
-  doctor: { label: "طبيب / باحث",   icon: "🩺", pages: ["library","abstracts"] },
+  admin: {
+    label: "مدير النظام",
+    icon: "🛡️",
+    pages: ["library","abstracts","gallery","news","users","videos","live","workshops","conference","bronchoscopy"],
+    //                                                                                   ^^^^^^^^^^
+  },  doctor: { label: "طبيب / باحث",   icon: "🩺", pages: ["library","abstracts"] },
   media:  { label: "مسؤول الإعلام", icon: "📸", pages: ["gallery","news","videos"] },
   staff:  { label: "موظف",          icon: "👤", pages: [] },
+  
 };
 
 const PAGE_META_FALLBACK = {
@@ -23,7 +28,9 @@ const PAGE_META_FALLBACK = {
   live:      { label: "البث المباشر",      icon: "📡", path: "/dashboard/live" },
   users:     { label: "إدارة المستخدمين",  icon: "👥", path: "/dashboard/users" },
   workshops: { label: "ورشات العمل",        icon: "📝", path: "/dashboard/workshops" },
-  videos:    { label: "الفيديوهات",        icon: "🎬", path: "/dashboard/videos" },
+  videos:       { label: "الفيديوهات",         icon: "🎬", path: "/dashboard/videos" },
+  conference:   { label: "تسجيلات المؤتمر",   icon: "📋", path: "/dashboard/conference" },
+  bronchoscopy: { label: "ورشة Bronchoscopy",  icon: "🫁", path: "/dashboard/bronchoscopy" },
 };
 
 /* ─── استخدم المستورد إذا كان صحيحاً، وإلا الـ fallback ─── */
@@ -51,6 +58,8 @@ function AccessCard({ pageKey, onClick }) {
     live:      { from: "#0f172a", to: "#1e293b", accent: "#38bdf8" },
     workshops: { from: "#713f12", to: "#92400e", accent: "#fde68a" },
     videos:    { from: "#b45309", to: "#78350f", accent: "#fcd34d" },
+    conference:   { from: "#0D1B2A", to: "#1B365D", accent: "#D4AF37" },
+    bronchoscopy: { from: "#134e4a", to: "#0f766e", accent: "#99f6e4" },
   };
   const c = cardColors[pageKey] || cardColors.library;
 

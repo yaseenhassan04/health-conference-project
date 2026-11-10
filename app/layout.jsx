@@ -1,6 +1,7 @@
 // app/layout.js
 import { Tajawal } from "next/font/google";
 import "./globals.css";
+import ConferencePopup from "@/components/ConferencePopup";
 import ClientNavbar from "@/client/components/ClientNavbar";
 import { LangProvider } from "@/client/context/LangContext";
 import AnnouncementPopup from "@/components/AnnouncementPopup"; // << أضف هذا
@@ -22,8 +23,7 @@ export default function RootLayout({ children }) {
     <html lang="ar">
       <body className={tajawal.className}>
         <LangProvider>
-          <AnnouncementPopup imageSrc="/workshops-announcement.png" />
-          {/* << أضف هذا */}
+<ConferencePopup />          {/* << أضف هذا */}
           <ClientNavbar />
           <main style={{ padding: 0, margin: 0, width: "100%" }}>
             {children}
