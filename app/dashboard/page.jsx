@@ -181,6 +181,78 @@ function StatCard({ label, value, icon, color }) {
   );
 }
 
+/* ─── اختصار المسجلين الوجاهيين ─── */
+function InPersonShortcut({ router }) {
+  return (
+    <button
+      onClick={() => router.push("/dashboard/conference")}
+      className="access-card"
+      style={{
+        background: "linear-gradient(135deg, #0D1B2A, #1B365D)",
+        border: "none",
+        borderRadius: 20,
+        padding: "24px 20px",
+        cursor: "pointer",
+        textAlign: "right",
+        direction: "rtl",
+        fontFamily: "'Cairo', sans-serif",
+        position: "relative",
+        overflow: "hidden",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        boxShadow: "0 4px 14px rgba(0,0,0,0.15)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        minHeight: 140,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-6px) scale(1.02)";
+        e.currentTarget.style.boxShadow = "0 20px 30px -12px rgba(13,27,42,0.5)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0) scale(1)";
+        e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.15)";
+      }}
+    >
+      {/* خلفية زخرفية */}
+      <div style={{
+        position: "absolute", top: -30, right: -30,
+        width: 130, height: 130, borderRadius: "50%",
+        background: "rgba(255,255,255,0.06)", pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: -20, left: -20,
+        width: 90, height: 90, borderRadius: "50%",
+        background: "rgba(255,255,255,0.04)", pointerEvents: "none",
+      }} />
+
+      <div style={{ fontSize: 40, lineHeight: 1, position: "relative", zIndex: 1 }}>📋</div>
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{
+          fontSize: 17, fontWeight: 900, color: "#fff",
+          marginBottom: 6, letterSpacing: "-0.3px",
+        }}>
+          تسجيلات المؤتمر الوجاهية
+        </div>
+        <div style={{
+          fontSize: 12, color: G,
+          display: "flex", alignItems: "center", gap: 6, fontWeight: 600,
+        }}>
+          <span>فتح القسم</span>
+          <span style={{ fontSize: 14, transition: "transform 0.2s" }}>←</span>
+        </div>
+      </div>
+
+      {/* شريط سفلي */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0, height: 3,
+        background: `linear-gradient(90deg, ${G}, transparent)`,
+        borderRadius: "0 0 20px 20px",
+      }} />
+    </button>
+  );
+}
+
 /* ─── الصفحة الرئيسية ─── */
 export default function DashboardHome() {
   const router = useRouter();
@@ -346,6 +418,11 @@ export default function DashboardHome() {
       }}>
         {stats.map((s, i) => <StatCard key={i} {...s} />)}
       </div>
+
+      {/* اختصار تسجيلات المؤتمر الوجاهية — للأدمن فقط */}
+      {role === "admin" && (
+        <InPersonShortcut router={router} />
+      )}
 
       {/* Quick Access */}
       <div style={{

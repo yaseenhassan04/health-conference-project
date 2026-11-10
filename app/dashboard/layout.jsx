@@ -20,15 +20,16 @@ function decodeJWT(token) {
 
 /* ─── Page Meta ─── */
 export const PAGE_META = {
-  library:    { label: "المكتبة الرقمية",  icon: "📚", path: "/dashboard/library" },
-  abstracts:  { label: "الأبحاث المقدمة", icon: "📋", path: "/dashboard/submission" },
-  gallery:    { label: "ألبوم الصور",       icon: "🖼️", path: "/dashboard/gallery" },
-  news:       { label: "الأخبار",           icon: "📰", path: "/dashboard/news" },
-  live:       { label: "البث المباشر",     icon: "📡", path: "/dashboard/live" },
-  users:      { label: "إدارة المستخدمين", icon: "👥", path: "/dashboard/users" },
-  workshops:  { label: "ورشات العمل",       icon: "📝", path: "/dashboard/workshops" },
-  videos:     { label: "الفيديوهات",       icon: "🎬", path: "/dashboard/videos" },
-  bronchoscopy:  { label: "ورشة Bronchoscopy",    icon: "🫁", path: "/dashboard/bronchoscopy" }, 
+  library:      { label: "المكتبة الرقمية",        icon: "📚", path: "/dashboard/library" },
+  abstracts:    { label: "الأبحاث المقدمة",       icon: "📋", path: "/dashboard/submission" },
+  gallery:      { label: "ألبوم الصور",             icon: "🖼️", path: "/dashboard/gallery" },
+  news:         { label: "الأخبار",                 icon: "📰", path: "/dashboard/news" },
+  live:         { label: "البث المباشر",           icon: "📡", path: "/dashboard/live" },
+  users:        { label: "إدارة المستخدمين",       icon: "👥", path: "/dashboard/users" },
+  workshops:    { label: "ورشات العمل",             icon: "📝", path: "/dashboard/workshops" },
+  videos:       { label: "الفيديوهات",             icon: "🎬", path: "/dashboard/videos" },
+  conference:   { label: "تسجيلات المؤتمر",        icon: "📋", path: "/dashboard/conference" },
+  bronchoscopy: { label: "ورشة Bronchoscopy",      icon: "🫁", path: "/dashboard/bronchoscopy" }, 
 };
 
 const ADMIN_PAGES = Object.keys(PAGE_META);
@@ -37,7 +38,7 @@ export const ROLE_CONFIG = {
   admin: {
     label: "مسؤول النظام",
     icon: "⚙️",
-    pages: ADMIN_PAGES, // تلقائي — ADMIN_PAGES = Object.keys(PAGE_META)
+    pages: ADMIN_PAGES,
   },
   doctor: {
     label: "طبيب / باحث",
@@ -214,10 +215,6 @@ function LoadingScreen() {
           جاري التحقق من الصلاحيات...
         </div>
       </div>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-      `}</style>
     </div>
   );
 }
@@ -257,7 +254,6 @@ function AccessDenied() {
   );
 }
 
-/* ─── Main Layout ─── */
 export default function DashboardLayout({ children }) {
   const router   = useRouter();
   const pathname = usePathname();
@@ -316,14 +312,6 @@ export default function DashboardLayout({ children }) {
       allowedPages: computedPages,
     }}>
       <div style={{ minHeight: "100vh", background: "#F0F4F8", fontFamily: "'Cairo',sans-serif" }}>
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          ::-webkit-scrollbar { width: 6px; height: 6px; }
-          ::-webkit-scrollbar-track { background: #f1f5f9; }
-          ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-          ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        `}</style>
         <Navbar user={user} onLogout={handleLogout} />
         <main style={{ width: "100%" }}>
           {denied ? <AccessDenied /> : children}
