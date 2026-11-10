@@ -1,7 +1,7 @@
 // المسار: app/registration/workshops/page.jsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 const SPECIALTIES = [
@@ -37,7 +37,8 @@ const PLACE = "القاعة التعليمية · المبنى الإداري ·
 const B = "#1B365D", G = "#C9A227", R = "#C8102E";
 const EMPTY = { fullNameAr: "", fullNameEn: "", email: "", whatsapp: "", specialty: "", workplace: "" };
 
-export default function WorkshopsRegistration() {
+// ─── المكوّن الداخلي الذي يستخدم useSearchParams ───
+function WorkshopsContent() {
   const searchParams = useSearchParams();
   const initialW = searchParams.get("w") === "pocus" ? "pocus" : "bronchoscopy";
 
@@ -372,3 +373,28 @@ export default function WorkshopsRegistration() {
 }
 
 const lbl = { fontSize: 12, fontWeight: 700, color: "#1B365D", display: "block", marginBottom: 6 };
+
+// ─── Loading fallback ───
+function LoadingFallback() {
+  return (
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center",
+      justifyContent: "center",
+      background: "linear-gradient(135deg,#0D1B2A,#1B365D)",
+      fontFamily: "'Cairo',sans-serif", direction: "rtl",
+    }}>
+      <div style={{ color: "#C9A227", fontSize: 18, fontWeight: 700 }}>
+        ⏳ جاري التحميل...
+      </div>
+    </div>
+  );
+}
+
+// ─── المكوّن الرئيسي المُصدَّر ───
+export default function WorkshopsRegistration() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <WorkshopsContent />
+    </Suspense>
+  );
+}

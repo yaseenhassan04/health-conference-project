@@ -210,6 +210,8 @@ export default function DashboardHome() {
       { label: "أبحاث مقدمة", value: "87", icon: "📋", color: "#065F46" },
       { label: "كتب في المكتبة", value: "143", icon: "📚", color: G },
       { label: "صور في الألبوم", value: "312", icon: "🖼️", color: "#7C3AED" },
+      { label: "تسجيلات المؤتمر", value: "—", icon: "📋", color: "#D4AF37" },
+
     ],
     staff: [
       { label: "صلاحياتي", value: String((permissions || []).length), icon: "🔑", color: B },

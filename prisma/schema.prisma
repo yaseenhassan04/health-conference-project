@@ -192,3 +192,24 @@ model WorkshopReg {
   @@unique([workshop, email])
   @@map("workshop_registrations")
 }
+
+model ConferenceRegistration {
+  id              Int       @id @default(autoincrement())
+  regNumber       String    @unique
+  fullName        String
+  nationalId      String    @unique          // ← أضف هذا
+  email           String    @unique
+  phone           String
+  workplace       String
+  specialty       String
+  subSpecialty    String    @default("")
+  invitedCategory String    @default("")
+  notes           String    @default("")
+  status          String    @default("PENDING")
+  adminNote       String    @default("")
+  reviewedBy      String    @default("")
+  reviewedAt      DateTime?
+  emailSent       Boolean   @default(false)
+  emailSentAt     DateTime?
+  createdAt       DateTime  @default(now())
+}
