@@ -131,28 +131,30 @@ function DetailModal({ reg, onClose, onDecision, onResend }) {
   return (
     <>
       {/* Overlay */}
-      <div onClick={onClose} style={{
-        position: "fixed", inset: 0, zIndex: 400,
-        background: "rgba(15,23,42,0.6)",
-        backdropFilter: "blur(4px)",
-      }} />
+<div onClick={onClose} style={{
+  position: "fixed",
+  top: "160px", left: 0, right: 0, bottom: 0,
+  zIndex: 400,
+  background: "rgba(15,23,42,0.6)",
+  backdropFilter: "blur(4px)",
+}} />
 
-      {/* Modal Box */}
-      <div style={{
-        position: "fixed",
-        top: "50%", left: "50%",
-        transform: "translate(-50%, -50%)",
-        zIndex: 500,
-        width: "min(820px, 95vw)",
-        maxHeight: "90vh",
-        background: "#fff",
-        borderRadius: 24,
-        boxShadow: "0 25px 60px rgba(0,0,0,0.25)",
-        display: "flex", flexDirection: "column",
-        fontFamily: "'Cairo', sans-serif", direction: "rtl",
-        animation: "popIn .22s cubic-bezier(.34,1.56,.64,1)",
-        overflow: "hidden",
-      }}>
+{/* Modal Box */}
+<div style={{
+  position: "fixed",
+  top: "50%", left: "50%",
+  transform: "translate(-50%, calc(-50% + 80px))",
+  zIndex: 500,
+  width: "min(820px, 95vw)",
+  maxHeight: "calc(100vh - 180px)",
+  background: "#fff",
+  borderRadius: 24,
+  boxShadow: "0 25px 60px rgba(0,0,0,0.25)",
+  display: "flex", flexDirection: "column",
+  fontFamily: "'Cairo', sans-serif", direction: "rtl",
+  animation: "popIn .22s cubic-bezier(.34,1.56,.64,1)",
+  overflow: "hidden",
+}}>
         <style>{`
           @keyframes popIn { from { opacity:0; transform:translate(-50%,-50%) scale(.92); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
           @keyframes spin { to { transform:rotate(360deg); } }
