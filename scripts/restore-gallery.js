@@ -16,14 +16,29 @@ function isGalleryFile(pathname) {
   return !excluded.some(ex => pathname.includes(ex));
 }
 
-function extractInfo(pathname) {
+function extractInfo(pathname, uploadedAt) {
   const ext = pathname.split('.').pop().toLowerCase();
   const isVideo = ['mp4','webm','mov'].includes(ext);
   
   let name = pathname.split('/').pop().replace(/\.[^.]+$/, '');
-  name = name.replace(/-[a-zA-Z0-9]{15,}$/, '');
+  
+  // احذف timestamp في البداية (13 رقم)
+  name = name.replace(/^\d{13}-/, '');
+  
+  // احذف الهاش في النهاية
+  name = name.replace(/-[a-zA-Z0-9]{10,}$/, '');
+  
   try { name = decodeURIComponent(name); } catch {}
   name = name.replace(/[-_]/g, ' ').trim();
+  
+  // إذا بقي رقم أو فاضي، استخدم التاريخ
+  if (!name || /^\d+$/.test(name)) {
+    const date = new Date(uploadedAt);
+    const d = date.toLocaleDateString('ar-EG', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    name = isVideo ? `فيديو ${d}` : `صورة ${d}`;
+  }
   
   let tag = 'فعاليات', tagEn = 'Events';
   const lower = pathname.toLowerCase();
@@ -37,7 +52,7 @@ function extractInfo(pathname) {
     tag = 'فيديوهات'; tagEn = 'Videos';
   }
   
-  return { isVideo, name: name || 'فعالية', tag, tagEn };
+  return { isVideo, name, tag, tagEn };
 }
 
 async function main() {
@@ -52,9 +67,8 @@ async function main() {
   
   console.log(`📦 وجدت ${allBlobs.length} ملف`);
 
-  // ← فلتر من 1 أكتوبر 2026 لليوم فقط
   const fromDate = new Date('2026-10-01');
-  const toDate = new Date(); // اليوم
+  const toDate = new Date();
 
   const galleryBlobs = allBlobs.filter(b => {
     if (!isGalleryFile(b.pathname)) return false;
@@ -64,14 +78,14 @@ async function main() {
 
   console.log(`🖼️  صور المعرض (أكتوبر → اليوم): ${galleryBlobs.length} ملف`);
 
-  // طباعة الملفات المفلترة
   galleryBlobs.forEach(b => {
+    const { name } = extractInfo(b.pathname, b.uploadedAt);
     const date = new Date(b.uploadedAt).toLocaleDateString('ar-EG');
-    console.log(`  📅 ${date} — ${b.pathname}`);
+    console.log(`  📅 ${date} — ${name}`);
   });
 
   const items = galleryBlobs.map((blob, i) => {
-    const { isVideo, name, tag, tagEn } = extractInfo(blob.pathname);
+    const { isVideo, name, tag, tagEn } = extractInfo(blob.pathname, blob.uploadedAt);
     return {
       id: Date.now() + i,
       src: blob.url,
@@ -88,11 +102,13 @@ async function main() {
   });
 
   console.log('\n💾 جاري حفظ db.json...');
-  const { blobs: oldDbs } = await list({ prefix: DB_PATH, token: TOKEN });
+  const { blobs: oldDbs } = await list({ prefix: 'gallery/db', token: TOKEN });
   if (oldDbs.length) {
     await Promise.all(oldDbs.map(b => del(b.url, { token: TOKEN })));
     console.log('🗑️  حذف db.json القديم');
   }
+
+  await new Promise(r => setTimeout(r, 1000));
 
   await put(DB_PATH, JSON.stringify({ items }, null, 2), {
     token: TOKEN,

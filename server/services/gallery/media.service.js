@@ -1,19 +1,26 @@
 import { put, list, del } from '@vercel/blob';
 import { ApiError } from '@/server/lib/apiError';
 
-const DB_BLOB_PATH = 'gallery/db.json';
+// استخدام prefix مختلف عشان نتجنب تعارض الأسماء
+const DB_PREFIX = 'gallery/db';
+const DB_PATH = 'gallery/db.json';
 
 async function readDb() {
   try {
-    const { blobs } = await list({ prefix: DB_BLOB_PATH });
-    if (!blobs.length) return { items: [], etag: null };
+    // اقرأ كل الملفات بالـ prefix
+    const { blobs } = await list({ prefix: DB_PREFIX });
+    if (!blobs.length) return { items: [] };
 
-    const res = await fetch(blobs[0].url, {
+    // خذ الأحدث
+    const latest = blobs.sort((a, b) =>
+      new Date(b.uploadedAt) - new Date(a.uploadedAt)
+    )[0];
+
+    const res = await fetch(latest.url, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store' },
     });
 
-    const etag = res.headers.get('etag') || blobs[0].uploadedAt;
     const data = await res.json();
     let items = Array.isArray(data?.items) ? data.items
               : Array.isArray(data) ? data : [];
@@ -25,23 +32,25 @@ async function readDb() {
       item.src.trim() !== ''
     );
 
-    return { items, etag };
+    return { items };
   } catch {
-    return { items: [], etag: null };
+    return { items: [] };
   }
 }
 
 async function writeDb(items) {
   try {
-    const { blobs } = await list({ prefix: DB_BLOB_PATH });
+    // احذف كل النسخ القديمة
+    const { blobs } = await list({ prefix: DB_PREFIX });
     if (blobs.length > 0) {
       await Promise.all(blobs.map(b => del(b.url)));
     }
 
-    // انتظر قليلاً بعد الحذف
-    await new Promise(r => setTimeout(r, 800));
+    // انتظر بعد الحذف
+    await new Promise(r => setTimeout(r, 1000));
 
-    const result = await put(DB_BLOB_PATH, JSON.stringify({ items }, null, 2), {
+    // ارفع النسخة الجديدة
+    const result = await put(DB_PATH, JSON.stringify({ items }, null, 2), {
       access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
@@ -89,10 +98,8 @@ export async function addGalleryMedia(body) {
 }
 
 export async function deleteGalleryMedia({ id }) {
-  // إعادة القراءة قبل الحذف مباشرة لضمان أحدث نسخة
   const { items } = await readDb();
   const before = items.length;
-
   const updated = items.filter(item => String(item.id) !== String(id));
 
   if (updated.length === before) {
