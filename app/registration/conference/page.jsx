@@ -195,8 +195,6 @@ export default function ConferenceRegistrationPage() {
           <div className="cf-hero-rule" />
           <p className="cf-hero-date">
             السبت والأحد 5 – 6 ديسمبر 2026
-            <span className="cf-date-separator">|</span>
-            فندق إيفان، غزة
           </p>
           <div className="cf-benefits" aria-label="مزايا الحضور">
             {[["🎓","حضور الجلسات"],["📸","معرض الصور"],["☕","الضيافة"],["🍽️","وجبات الغداء"]].map(([icon, title]) => (

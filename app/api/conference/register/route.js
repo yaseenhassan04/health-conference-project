@@ -18,24 +18,32 @@ export async function POST(req) {
       subSpecialty,
       invitedCategory,
       notes,
+      nationalId,
     } = body;
 
     // Validation
-    if (!fullName || !email || !phone || !workplace || !specialty) {
+    if (!fullName || !email || !phone || !workplace || !specialty || !nationalId) {
       return NextResponse.json(
         { error: 'جميع الحقول الأساسية مطلوبة' },
         { status: 400 }
       );
     }
 
-    // منع التكرار
-    const existing = await prisma.conferenceRegistration.findUnique({
-      where: { email },
+    // منع التكرار بالإيميل أو رقم الهوية
+    const existing = await prisma.conferenceRegistration.findFirst({
+      where: {
+        OR: [{ email }, { nationalId }],
+      },
     });
 
     if (existing) {
       return NextResponse.json(
-        { error: 'هذا البريد الإلكتروني مسجّل مسبقاً' },
+        {
+          error:
+            existing.email === email
+              ? 'هذا البريد الإلكتروني مسجّل مسبقاً'
+              : 'رقم الهوية الوطنية مسجّل مسبقاً',
+        },
         { status: 409 }
       );
     }
@@ -55,6 +63,7 @@ export async function POST(req) {
       data: {
         regNumber,
         fullName,
+        nationalId,
         email,
         phone,
         workplace,
@@ -79,30 +88,22 @@ export async function POST(req) {
     );
   }
 }
-/**
- * أضف هذا الـ handler إلى:
- *   app/api/conference/register/route.js
- *
- * الملف الحالي عنده POST فقط — أضف هذه الدالة بعده مباشرة.
- */
 
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status"); // ALL | PENDING | APPROVED | REJECTED
+    const status = searchParams.get('status'); // ALL | PENDING | APPROVED | REJECTED
 
-    const where = status && status !== "ALL"
-      ? { status }
-      : {};
+    const where = status && status !== 'ALL' ? { status } : {};
 
     const registrations = await prisma.conferenceRegistration.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
 
     return NextResponse.json(registrations);
   } catch (error) {
-    console.error("Get all registrations error:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error('Get all registrations error:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

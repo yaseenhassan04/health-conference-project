@@ -197,7 +197,7 @@ model ConferenceRegistration {
   id              Int       @id @default(autoincrement())
   regNumber       String    @unique
   fullName        String
-  nationalId      String    @unique          // ← أضف هذا
+  nationalId      String    @default("") @unique          // ← أضف هذا
   email           String    @unique
   phone           String
   workplace       String
