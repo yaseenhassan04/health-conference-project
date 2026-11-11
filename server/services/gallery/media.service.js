@@ -4,12 +4,51 @@ import { ApiError } from '@/server/lib/apiError';
 
 const DB_BLOB_PATH = 'gallery/db.json';
 
+// قفل لمنع التزامن
+let writeLock = false;
+const writeQueue = [];
+
+async function processQueue() {
+  if (writeLock || writeQueue.length === 0) return;
+  writeLock = true;
+  const { items, resolve, reject } = writeQueue.shift();
+  try {
+    await _writeDb(items);
+    resolve();
+  } catch (err) {
+    reject(err);
+  } finally {
+    writeLock = false;
+    processQueue();
+  }
+}
+
+async function _writeDb(items) {
+  const { blobs } = await list({ prefix: DB_BLOB_PATH });
+  if (blobs.length > 0) {
+    await Promise.all(blobs.map((b) => del(b.url)));
+  }
+  await new Promise(r => setTimeout(r, 500));
+  await put(DB_BLOB_PATH, JSON.stringify({ items }, null, 2), {
+    access: 'public',
+    contentType: 'application/json',
+    addRandomSuffix: false,
+    allowOverwrite: true,
+  });
+}
+
+async function writeDb(items) {
+  return new Promise((resolve, reject) => {
+    writeQueue.push({ items, resolve, reject });
+    processQueue();
+  });
+}
+
 async function readDb() {
   try {
     const { blobs } = await list({ prefix: DB_BLOB_PATH });
     if (!blobs.length) return { items: [] };
 
-    // ← no-store عشان ما يرجع نسخة قديمة من الـ CDN
     const res = await fetch(blobs[0].url, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store' },
@@ -30,26 +69,6 @@ async function readDb() {
     return { items };
   } catch {
     return { items: [] };
-  }
-}
-
-async function writeDb(items) {
-  try {
-    // احذف كل النسخ القديمة أولاً
-    const { blobs } = await list({ prefix: DB_BLOB_PATH });
-    if (blobs.length > 0) {
-      await Promise.all(blobs.map((b) => del(b.url)));
-    }
-
-    await put(DB_BLOB_PATH, JSON.stringify({ items }, null, 2), {
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-    });
-  } catch (err) {
-    console.error('❌ فشل كتابة البيانات:', err.message);
-    throw err;
   }
 }
 

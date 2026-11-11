@@ -4,13 +4,11 @@ const { list, put, del } = require('@vercel/blob');
 const TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 const DB_PATH = 'gallery/db.json';
 
-// فقط صور وفيديوهات المعرض الحقيقية
 function isGalleryFile(pathname) {
   const ext = pathname.split('.').pop().toLowerCase();
   const validExts = ['jpg','jpeg','png','webp','gif','mp4','webm','mov'];
   if (!validExts.includes(ext)) return false;
   
-  // استثني الملفات غير المرغوبة
   const excluded = [
     'abstracts/', 'library/', 'banner_16x5', 
     'announcement', 'trophy', 'OIP', 'hero'
@@ -22,13 +20,11 @@ function extractInfo(pathname) {
   const ext = pathname.split('.').pop().toLowerCase();
   const isVideo = ['mp4','webm','mov'].includes(ext);
   
-  // استخرج اسم ذكي
   let name = pathname.split('/').pop().replace(/\.[^.]+$/, '');
-  name = name.replace(/-[a-zA-Z0-9]{15,}$/, ''); // احذف الهاش
+  name = name.replace(/-[a-zA-Z0-9]{15,}$/, '');
   try { name = decodeURIComponent(name); } catch {}
   name = name.replace(/[-_]/g, ' ').trim();
   
-  // حدد التاغ
   let tag = 'فعاليات', tagEn = 'Events';
   const lower = pathname.toLowerCase();
   if (lower.includes('ورشة') || lower.includes('workshop') || lower.includes('تنظير')) {
@@ -47,7 +43,6 @@ function extractInfo(pathname) {
 async function main() {
   console.log('🔍 جاري جلب الملفات...');
   
-  // جلب كل الملفات
   let allBlobs = [], cursor;
   do {
     const result = await list({ token: TOKEN, cursor, limit: 100 });
@@ -56,12 +51,25 @@ async function main() {
   } while (cursor);
   
   console.log(`📦 وجدت ${allBlobs.length} ملف`);
-  
-  // فلتر صور المعرض فقط
-  const galleryBlobs = allBlobs.filter(b => isGalleryFile(b.pathname));
-  console.log(`🖼️  صور المعرض: ${galleryBlobs.length} ملف`);
-  
-  // بناء قائمة الصور
+
+  // ← فلتر من 1 أكتوبر 2026 لليوم فقط
+  const fromDate = new Date('2026-10-01');
+  const toDate = new Date(); // اليوم
+
+  const galleryBlobs = allBlobs.filter(b => {
+    if (!isGalleryFile(b.pathname)) return false;
+    const uploaded = new Date(b.uploadedAt);
+    return uploaded >= fromDate && uploaded <= toDate;
+  });
+
+  console.log(`🖼️  صور المعرض (أكتوبر → اليوم): ${galleryBlobs.length} ملف`);
+
+  // طباعة الملفات المفلترة
+  galleryBlobs.forEach(b => {
+    const date = new Date(b.uploadedAt).toLocaleDateString('ar-EG');
+    console.log(`  📅 ${date} — ${b.pathname}`);
+  });
+
   const items = galleryBlobs.map((blob, i) => {
     const { isVideo, name, tag, tagEn } = extractInfo(blob.pathname);
     return {
@@ -78,26 +86,25 @@ async function main() {
       order: i,
     };
   });
-  
-  // احذف db.json القديم وارفع الجديد
-  console.log('💾 جاري حفظ db.json...');
-  const { blobs: oldDbs } = await list({ prefix: 'gallery/db.json', token: TOKEN });
+
+  console.log('\n💾 جاري حفظ db.json...');
+  const { blobs: oldDbs } = await list({ prefix: DB_PATH, token: TOKEN });
   if (oldDbs.length) {
     await Promise.all(oldDbs.map(b => del(b.url, { token: TOKEN })));
     console.log('🗑️  حذف db.json القديم');
   }
-  
-  const { put } = require('@vercel/blob');
-  await put('gallery/db.json', JSON.stringify({ items }, null, 2), {
+
+  await put(DB_PATH, JSON.stringify({ items }, null, 2), {
     token: TOKEN,
     access: 'public',
     contentType: 'application/json',
     addRandomSuffix: false,
     allowOverwrite: true,
   });
-  
+
   console.log('\n========== النتيجة ==========');
   console.log(`✅ تم حفظ ${items.length} عنصر في db.json`);
+  console.log(`📅 الفترة: 1 أكتوبر 2026 → ${toDate.toLocaleDateString('ar-EG')}`);
   console.log('==============================');
   console.log('\n🌐 افتح الموقع وتحقق من المعرض!');
 }
