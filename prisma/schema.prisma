@@ -89,7 +89,7 @@ model Admin {
 
 model GalleryMedia {
   id        Int      @id @default(autoincrement())
-  src       String
+  src       String   @db.Text    // ← أضف هذا
   captionAr String
   captionEn String   @default("")
   tag       String   @default("فعاليات")
@@ -197,7 +197,6 @@ model ConferenceRegistration {
   id              Int       @id @default(autoincrement())
   regNumber       String    @unique
   fullName        String
-  nationalId      String    @default("") @unique          // ← أضف هذا
   email           String    @unique
   phone           String
   workplace       String
@@ -212,4 +211,5 @@ model ConferenceRegistration {
   emailSent       Boolean   @default(false)
   emailSentAt     DateTime?
   createdAt       DateTime  @default(now())
+  nationalId      String    @unique @default("")
 }
