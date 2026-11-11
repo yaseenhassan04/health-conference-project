@@ -1,55 +1,58 @@
 import { put, list, del } from '@vercel/blob';
 import { ApiError } from '@/server/lib/apiError';
 
-// استخدام prefix مختلف عشان نتجنب تعارض الأسماء
 const DB_PREFIX = 'gallery/db';
 const DB_PATH = 'gallery/db.json';
 
-async function readDb() {
-  try {
-    // اقرأ كل الملفات بالـ prefix
-    const { blobs } = await list({ prefix: DB_PREFIX });
-    if (!blobs.length) return { items: [] };
-
-    // خذ الأحدث
-    const latest = blobs.sort((a, b) =>
-      new Date(b.uploadedAt) - new Date(a.uploadedAt)
-    )[0];
-
-    const res = await fetch(latest.url, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache, no-store' },
-    });
-
-    const data = await res.json();
-    let items = Array.isArray(data?.items) ? data.items
-              : Array.isArray(data) ? data : [];
-
-    items = items.filter(item =>
-      item?.src &&
-      typeof item.src === 'string' &&
-      !item.src.startsWith('undefined') &&
-      item.src.trim() !== ''
-    );
-
-    return { items };
-  } catch {
-    return { items: [] };
+function stableId(src) {
+  let h = 0;
+  for (let i = 0; i < src.length; i++) {
+    h = Math.imul(31, h) + src.charCodeAt(i) | 0;
   }
+  return Math.abs(h);
+}
+
+async function readDb() {
+  // أولاً — اقرأ من الملف المحلي (الأسرع والأضمن)
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://health-conference-project.vercel.app';
+    const res = await fetch(`${siteUrl}/gallery-db.json`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      const items = Array.isArray(data?.items) ? data.items : [];
+      if (items.length > 0) return { items };
+    }
+  } catch {}
+
+  // ثانياً — جرّب Vercel Blob
+  try {
+    const { blobs } = await list({ prefix: DB_PREFIX });
+    if (blobs.length) {
+      const latest = blobs.sort((a, b) =>
+        new Date(b.uploadedAt) - new Date(a.uploadedAt)
+      )[0];
+      const res = await fetch(latest.url, { cache: 'no-store' });
+      const data = await res.json();
+      let items = Array.isArray(data?.items) ? data.items : [];
+      items = items.filter(item => item?.src && !item.src.startsWith('undefined'));
+      if (items.length > 0) return { items };
+    }
+  } catch {}
+
+  return { items: [] };
 }
 
 async function writeDb(items) {
+  // حدّث الملف المحلي أولاً عبر الـ public folder
+  // ثم ارفع للـ Blob
   try {
-    // احذف كل النسخ القديمة
     const { blobs } = await list({ prefix: DB_PREFIX });
     if (blobs.length > 0) {
       await Promise.all(blobs.map(b => del(b.url)));
     }
 
-    // انتظر بعد الحذف
     await new Promise(r => setTimeout(r, 1000));
 
-    // ارفع النسخة الجديدة
     const result = await put(DB_PATH, JSON.stringify({ items }, null, 2), {
       access: 'public',
       contentType: 'application/json',
@@ -78,8 +81,14 @@ export async function addGalleryMedia(body) {
   }
 
   const { items } = await readDb();
+
+  const existingIndex = items.findIndex(i => i.src === finalUrl);
+  if (existingIndex !== -1) {
+    return { items };
+  }
+
   const newItem = {
-    id: Date.now(),
+    id: stableId(finalUrl),
     src: finalUrl,
     thumbnail: body.thumbnail || '',
     type: body.type || 'image',
@@ -126,7 +135,7 @@ export async function updateGalleryMedia({ id, patch }) {
 export async function saveGalleryScreenshot({ url, captionAr, captionEn, tag, tagEn }) {
   const { items } = await readDb();
   items.unshift({
-    id: Date.now(),
+    id: stableId(url),
     src: url,
     captionAr,
     captionEn,
