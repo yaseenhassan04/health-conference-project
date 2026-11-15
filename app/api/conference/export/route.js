@@ -3,32 +3,32 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
+    // جلب جميع التسجيلات (130 مسجل) بدون تقييد بالحالة
     const registrations = await prisma.conferenceRegistration.findMany({
-      where: { status: 'APPROVED' },
       orderBy: { createdAt: 'asc' },
     });
 
-    // CSV Export
     const headers = [
       'رقم التسجيل', 'الاسم الكامل', 'البريد الإلكتروني',
       'الهاتف', 'مكان العمل', 'التخصص', 'التخصص الفرعي',
-      'الفئة', 'تاريخ التسجيل',
+      'الفئة', 'الحالة', 'تاريخ التسجيل',
     ];
 
     const rows = registrations.map(r => [
-      r.regNumber,
-      r.fullName,
-      r.email,
-      r.phone,
-      r.workplace,
-      r.specialty,
-      r.subSpecialty,
-      r.invitedCategory,
-      new Date(r.createdAt).toLocaleDateString('ar-EG'),
+      r.regNumber ?? '',
+      r.fullName ?? '',
+      r.email ?? '',
+      r.phone ?? '',
+      r.workplace ?? '',
+      r.specialty ?? '',
+      r.subSpecialty ?? '',
+      r.invitedCategory ?? '',
+      r.status ?? '', // عمود يوضح حالة التسجيل (PENDING / APPROVED / REJECTED)
+      r.createdAt ? new Date(r.createdAt).toLocaleDateString('ar-EG') : '',
     ]);
 
     const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
       .join('\n');
 
     const BOM = '\uFEFF'; // دعم العربية في Excel

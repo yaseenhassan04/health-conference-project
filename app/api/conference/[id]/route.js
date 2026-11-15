@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(req, { params }) {
   try {
-    const id = parseInt(params.id);
+    // 1. يجب انتظار الـ params أولاً (مطلوب في Next.js 15+)
+    const resolvedParams = await params;
+    const id = parseInt(resolvedParams.id);
 
     const registration = await prisma.conferenceRegistration.findUnique({
       where: { id },
