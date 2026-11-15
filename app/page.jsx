@@ -20,7 +20,7 @@ function saveStats(likes, views) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ likes, views }),
     }).catch(() => {});
-  }, 1500);
+  }, 10000);
 }
 
 function proxyImg(url) {
@@ -105,7 +105,14 @@ function GalleryLightbox({ item, meta, onClose, onPrev, onNext, isRtl, isMobile,
         {isVideo ? (
           <video src={item.src} controls autoPlay playsInline style={{ maxWidth: "88vw", maxHeight: "78vh", borderRadius: 14, boxShadow: "0 30px 80px rgba(0,0,0,0.6)", border: `2px solid ${G}40` }} />
         ) : (
-          <img src={proxyImg(item.src)} alt={meta?.caption} style={{ maxWidth: "88vw", maxHeight: "78vh", borderRadius: 14, boxShadow: "0 30px 80px rgba(0,0,0,0.6)", border: `2px solid ${G}40`, transform: `scale(${zoom})`, transition: "transform 0.3s ease", cursor: zoom > 1 ? "zoom-out" : "zoom-in", objectFit: "contain" }} onClick={() => setZoom(z => z > 1 ? 1 : 1.8)} />
+          <img
+            src={proxyImg(item.src)}
+            alt={meta?.caption}
+            loading="lazy"
+            decoding="async"
+            style={{ maxWidth: "88vw", maxHeight: "78vh", borderRadius: 14, boxShadow: "0 30px 80px rgba(0,0,0,0.6)", border: `2px solid ${G}40`, transform: `scale(${zoom})`, transition: "transform 0.3s ease", cursor: zoom > 1 ? "zoom-out" : "zoom-in", objectFit: "contain" }}
+            onClick={() => setZoom(z => z > 1 ? 1 : 1.8)}
+          />
         )}
         <button onClick={e => { e.stopPropagation(); isRtl ? onNext() : onPrev(); }} style={{ position: "absolute", left: isMobile ? -40 : -60, top: "50%", transform: "translateY(-50%)", ...lbArrowStyle }}>‹</button>
         <button onClick={e => { e.stopPropagation(); isRtl ? onPrev() : onNext(); }} style={{ position: "absolute", right: isMobile ? -40 : -60, top: "50%", transform: "translateY(-50%)", ...lbArrowStyle }}>›</button>
@@ -375,7 +382,14 @@ export default function Home() {
               </div>
               <div key={`frame-${orgCardIndex}`} style={{ width: 250, height: 200, margin: "0 auto 14px", borderRadius: 20, padding: 3, background: active.frameBorder, boxShadow: "0 10px 26px rgba(0,0,0,0.14)", animation: "fade-in 0.5s ease" }}>
                 <div style={{ width: "100%", height: "100%", borderRadius: 17, background: "#FFFCF4", border: `1px solid ${G}22`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: 3 }}>
-                  <img src={orgCards[orgCardIndex]} alt={active.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; const p = e.currentTarget.parentElement; if (p) p.innerHTML = `<div style="font-size:15px;font-weight:900;color:${NAVY};">UK-MED</div>`; }} />
+                  <img
+                    src={orgCards[orgCardIndex]}
+                    alt={active.label}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={(e) => { e.currentTarget.style.display = "none"; const p = e.currentTarget.parentElement; if (p) p.innerHTML = `<div style="font-size:15px;font-weight:900;color:${NAVY};">UK-MED</div>`; }}
+                  />
                 </div>
               </div>
               <div key={`badge-${orgCardIndex}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 16px", borderRadius: 30, background: active.badgeBg, boxShadow: "0 3px 10px rgba(0,0,0,0.15)", animation: "fade-in 0.5s ease" }}>
@@ -419,10 +433,48 @@ export default function Home() {
     </>
   ), [t, isRtl, isMobile, hoveredLeader, hoveredCommittee, orgCardIndex, orgCards]);
 
-  // ══════ sidebarLeftContent — يقرأ promoVideos من الـ state ══════
+  // ══════ sidebarLeftContent ══════
   const sidebarLeftContent = useMemo(() => (
     <>
       <PresidentQuoteSlide t={t} isRtl={isRtl} />
+
+      {/* ══════ كارد التسجيل ══════ */}
+      <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${G}30`, overflow: "hidden", boxShadow: "0 3px 14px rgba(27,54,93,0.08)" }}>
+        <div style={{ padding: "11px 16px", background: `linear-gradient(135deg,${B},#2a4a7a)`, display: "flex", alignItems: "center", gap: 10, position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg,${G},${R},${G})`, backgroundSize: "200% 100%", animation: "shimmer-border 2.5s linear infinite" }} />
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: `${G}25`, border: `1px solid ${G}50`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📋</div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 900, color: "#fff" }}>{isRtl ? "التسجيل في المؤتمر" : "Conference Registration"}</div>
+            <div style={{ fontSize: 10, color: `${G}bb`, marginTop: 1 }}>{isRtl ? "سجّل الآن وانضم إلينا" : "Register now and join us"}</div>
+          </div>
+        </div>
+        <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
+          {[
+            { icon: "📅", ar: "5 – 6 ديسمبر 2026", en: "5 – 6 December 2026" },
+            { icon: "📍", ar: "فندق فينيكس – غزة", en: "Phoenix Hotel – Gaza" },
+          ].map((row, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: 9, background: i % 2 === 0 ? "#F8FAFC" : `${G}08`, border: `1px solid ${B}08` }}>
+              <span style={{ fontSize: 14, flexShrink: 0 }}>{row.icon}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: B }}>{isRtl ? row.ar : row.en}</span>
+            </div>
+          ))}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 12px", borderRadius: 30, background: `${R}0e`, border: `1px solid ${R}25` }}>
+            <span style={{ fontSize: 12 }}>⏳</span>
+            <span style={{ fontSize: 10, fontWeight: 800, color: R }}>{isRtl ? "آخر موعد: 18 نوفمبر 2026" : "Deadline: Nov 18, 2026"}</span>
+          </div>
+        </div>
+        <div style={{ padding: "4px 12px 12px" }}>
+          <Link href="/registration/conference" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px 16px", borderRadius: 12, background: `linear-gradient(135deg,${B},#2a4a7a)`, color: "#fff", textDecoration: "none", fontSize: 13, fontWeight: 900, boxShadow: `0 5px 16px ${B}30`, transition: "transform 0.22s, box-shadow 0.22s", position: "relative", overflow: "hidden" }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 22px ${B}45`; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 5px 16px ${B}30`; }}>
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${G},${R},${G})`, backgroundSize: "200% 100%", animation: "shimmer-border 2.5s linear infinite" }} />
+            <span style={{ fontSize: 15 }}>📋</span>
+            <span>{isRtl ? "سجّل الآن" : "Register Now"}</span>
+            <span style={{ fontSize: 14, opacity: 0.75 }}>{isRtl ? "←" : "→"}</span>
+          </Link>
+        </div>
+        <div style={{ padding: "7px 14px", background: `${B}04`, borderTop: `1px solid ${B}08`, textAlign: "center" }} />
+      </div>
 
       {/* ══════ كارد الفيديوهات الترويجية ══════ */}
       {promoVideos.length > 0 && (
@@ -441,7 +493,16 @@ export default function Home() {
             {promoVideos.map((video, i) => (
               <button key={video.id} onClick={() => setPromoVideoOpen(video)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#fff", border: "none", borderBottom: i < promoVideos.length - 1 ? `1px solid ${B}07` : "none", cursor: "pointer", fontFamily: "'Cairo',sans-serif", textAlign: isRtl ? "right" : "left", transition: "background 0.2s", width: "100%" }} onMouseEnter={e => e.currentTarget.style.background = `${G}08`} onMouseLeave={e => e.currentTarget.style.background = "#fff"}>
                 <div style={{ position: "relative", width: 72, height: 48, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#0D1B2A", border: `1.5px solid ${G}30`, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
-                  {video.poster && <img src={video.poster} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.6)" }} onError={e => { e.currentTarget.style.display = "none"; }} />}
+                  {video.poster && (
+                    <img
+                      src={video.poster}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.6)" }}
+                      onError={e => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
                   <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(200,16,46,0.9)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(200,16,46,0.5)" }}>
                       <span style={{ color: "#fff", fontSize: 10, marginInlineStart: 2 }}>▶</span>
@@ -496,9 +557,15 @@ export default function Home() {
           {(isMobile || isTablet) && (
             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>{sidebarRightContent}</div>
           )}
+
           {/* HERO */}
           <div style={{ ...rev("hero", 0), borderRadius: isMobile ? 14 : 22, overflow: "hidden", marginBottom: isMobile ? 14 : 22, boxShadow: `0 0 0 3px ${G}50,0 12px 40px rgba(27,54,93,0.15)`, position: "relative", animation: visible["hero"] ? "hero-fade 1s cubic-bezier(0.22,1,0.36,1) both" : "none" }}>
-            <img src="/hero-banner.png" alt={isRtl ? "شعار المؤتمر" : "Conference Banner"} style={{ width: "100%", display: "block", objectFit: "cover", objectPosition: "center top", minHeight: isMobile ? 180 : 260, maxHeight: isMobile ? 220 : isTablet ? 300 : 360 }} onError={(e) => { e.currentTarget.style.display = "none"; const p = e.currentTarget.parentElement; p.style.cssText += `background:linear-gradient(135deg,${G}18,#EBF0F8);min-height:${isMobile ? 180 : 280}px;display:flex;align-items:center;justify-content:center;`; const d = document.createElement("div"); d.style.cssText = "text-align:center;padding:40px;"; d.innerHTML = `<div style="font-size:60px;margin-bottom:14px">🏥</div><div style="font-size:17px;font-weight:900;color:${B}">${t.conferenceTitle}</div>`; p.appendChild(d); }} />
+            <img
+              src="/hero-banner.png"
+              alt={isRtl ? "شعار المؤتمر" : "Conference Banner"}
+              style={{ width: "100%", display: "block", objectFit: "cover", objectPosition: "center top", minHeight: isMobile ? 180 : 260, maxHeight: isMobile ? 220 : isTablet ? 300 : 360 }}
+              onError={(e) => { e.currentTarget.style.display = "none"; const p = e.currentTarget.parentElement; p.style.cssText += `background:linear-gradient(135deg,${G}18,#EBF0F8);min-height:${isMobile ? 180 : 280}px;display:flex;align-items:center;justify-content:center;`; const d = document.createElement("div"); d.style.cssText = "text-align:center;padding:40px;"; d.innerHTML = `<div style="font-size:60px;margin-bottom:14px">🏥</div><div style="font-size:17px;font-weight:900;color:${B}">${t.conferenceTitle}</div>`; p.appendChild(d); }}
+            />
             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 5, background: `linear-gradient(90deg,${R},${G},${R})`, backgroundSize: "200% 100%", animation: "shimmer-border 2.5s linear infinite" }} />
           </div>
 
@@ -532,6 +599,8 @@ export default function Home() {
                       const realIdx = mediaItems.indexOf(item);
                       const meta = getMeta(item, realIdx);
                       const isVideoItem = item.type === "video";
+                      // ✅ الصورة الأولى تُحمَّل eager، الباقي lazy
+                      const imgLoading = i === 0 ? "eager" : "lazy";
                       return (
                         <div key={item.id ?? i} style={{ minWidth: "100%", width: "100%", height: "100%", flexShrink: 0, position: "relative", background: "#000", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                           {isVideoItem ? (
@@ -541,8 +610,26 @@ export default function Home() {
                             </div>
                           ) : (
                             <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", background: "#000" }}>
-                              <img src={proxyImg(item.src)} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.4) saturate(1.2)", transform: "scale(1.05)", pointerEvents: "none", userSelect: "none" }} />
-                              <img src={proxyImg(item.src)} alt={meta.caption} draggable={false} onClick={() => openLightbox(i)} style={{ position: "relative", maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain", display: "block", cursor: "zoom-in", zIndex: 1 }} onError={(e) => { e.currentTarget.style.display = "none"; const p = e.currentTarget.parentElement; const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:2;"; d.innerHTML = `<span style="font-size:48px">🏥</span><span style="color:#fff;font-size:15px;font-weight:700;">${meta.caption}</span>`; p.appendChild(d); }} />
+                              {/* ✅ صورة الخلفية الضبابية */}
+                              <img
+                                src={proxyImg(item.src)}
+                                alt=""
+                                aria-hidden
+                                loading={imgLoading}
+                                decoding="async"
+                                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px) brightness(0.4) saturate(1.2)", transform: "scale(1.05)", pointerEvents: "none", userSelect: "none" }}
+                              />
+                              {/* ✅ الصورة الرئيسية */}
+                              <img
+                                src={proxyImg(item.src)}
+                                alt={meta.caption}
+                                loading={imgLoading}
+                                decoding="async"
+                                draggable={false}
+                                onClick={() => openLightbox(i)}
+                                style={{ position: "relative", maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain", display: "block", cursor: "zoom-in", zIndex: 1 }}
+                                onError={(e) => { e.currentTarget.style.display = "none"; const p = e.currentTarget.parentElement; const d = document.createElement("div"); d.style.cssText = "position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:2;"; d.innerHTML = `<span style="font-size:48px">🏥</span><span style="color:#fff;font-size:15px;font-weight:700;">${meta.caption}</span>`; p.appendChild(d); }}
+                              />
                             </div>
                           )}
                           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,transparent 50%,rgba(27,54,93,0.6))", pointerEvents: "none", zIndex: 2 }} />
@@ -571,6 +658,7 @@ export default function Home() {
                   ))}
                 </div>
               )}
+              {/* ✅ Thumbnails مع lazy loading */}
               {!isMobile && filteredMedia.length > 0 && (
                 <div ref={thumbStripRef} style={{ display: "flex", gap: 8, padding: "12px 16px", overflowX: "auto", background: "#F4F6FA", scrollbarWidth: "thin", scrollbarColor: `${G}50 transparent`, borderTop: `1px solid ${B}08`, scrollBehavior: "smooth" }}>
                   {filteredMedia.map((item, i) => {
@@ -579,7 +667,16 @@ export default function Home() {
                     const isActive = i === activeSlide, isHovered = hoveredThumb === i;
                     return (
                       <div key={item.id ?? i} className={`thumb-item${isActive ? " active" : ""}`} onClick={() => goTo(i)} onMouseEnter={() => setHoveredThumb(i)} onMouseLeave={() => setHoveredThumb(null)} style={{ position: "relative", width: 88, height: 60, flexShrink: 0, borderRadius: 10, overflow: "hidden", cursor: "pointer", border: isActive ? `2.5px solid ${G}` : isHovered ? `2px solid ${B}50` : "2px solid transparent", boxShadow: isActive ? `0 4px 16px ${G}50` : isHovered ? "0 4px 12px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.1)", transform: isActive ? "scale(1.08)" : isHovered ? "scale(1.04)" : "scale(1)", transition: "all 0.25s cubic-bezier(0.22,1,0.36,1)", opacity: isActive ? 1 : isHovered ? 0.9 : 0.7, background: "#1B365D" }}>
-                        {(item.type !== "video" || item.thumbnail) && <img src={proxyImg(item.type === "video" ? item.thumbnail : item.src)} alt={meta.caption || ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} onError={e => { e.currentTarget.style.display = "none"; }} />}
+                        {(item.type !== "video" || item.thumbnail) && (
+                          <img
+                            src={proxyImg(item.type === "video" ? item.thumbnail : item.src)}
+                            alt={meta.caption || ""}
+                            loading="lazy"
+                            decoding="async"
+                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
+                            onError={e => { e.currentTarget.style.display = "none"; }}
+                          />
+                        )}
                         {item.type === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.3)" }}><span style={{ fontSize: 18, color: "#fff" }}>▶</span></div>}
                         {(mediaLikes[realIdx] || 0) > 0 && <div style={{ position: "absolute", bottom: 3, right: 3, background: "rgba(0,0,0,0.6)", borderRadius: 8, fontSize: 8, color: "#fff", padding: "1px 5px", fontWeight: 700 }}>❤ {mediaLikes[realIdx]}</div>}
                         {isActive && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: G }} />}
@@ -647,11 +744,11 @@ export default function Home() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
           <span>{t.footer}</span>
           <span style={{ color: "#e2e8f0" }}>|</span>
-          <span style={{ direction: "ltr", color: "#cbd5e1", fontSize: isMobile ? 10 : 13 }}>Nasser Medical Complex · Gaza · 4–5 Dec 2026</span>
+          <span style={{ direction: "ltr", color: "#cbd5e1", fontSize: isMobile ? 10 : 13 }}>Phoenix Hotel · Gaza · 5–6 Dec 2026</span>
         </div>
       </footer>
 
-      {/* VIDEO LIGHTBOX (الفيديو الترويجي الرئيسي) */}
+      {/* VIDEO LIGHTBOX */}
       {videoOpen && (
         <div onClick={() => setVideoOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.88)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, animation: "fade-in .2s", padding: isMobile ? 12 : 20 }}>
           <div onClick={e => e.stopPropagation()} style={{ position: "relative", width: "100%", maxWidth: 900, borderRadius: 18, overflow: "hidden", boxShadow: `0 30px 100px rgba(0,0,0,0.5)`, animation: "scale-in 0.35s cubic-bezier(0.34,1.56,0.64,1)" }}>
@@ -662,7 +759,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* PROMO VIDEO LIGHTBOX (الفيديوهات من الداشبورد) */}
+      {/* PROMO VIDEO LIGHTBOX */}
       {promoVideoOpen && (
         <div onClick={() => setPromoVideoOpen(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1001, animation: "fade-in .2s", padding: isMobile ? 12 : 20, backdropFilter: "blur(8px)" }}>
           <div onClick={e => e.stopPropagation()} style={{ position: "relative", width: "100%", maxWidth: 900, borderRadius: 18, overflow: "hidden", boxShadow: "0 30px 100px rgba(0,0,0,0.5)", animation: "scale-in 0.35s cubic-bezier(0.34,1.56,0.64,1)" }}>

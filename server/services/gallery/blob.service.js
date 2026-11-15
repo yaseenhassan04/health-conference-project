@@ -6,11 +6,36 @@ export async function proxyBlobImage({ blobUrl }) {
     throw new ApiError(400, 'url مطلوب');
   }
 
-  const urlWithToken = `${blobUrl}?token=${process.env.BLOB_READ_WRITE_TOKEN}`;
-  const response = await fetch(urlWithToken);
+  // ✅ إصلاح double encoding
+  let cleanUrl = blobUrl;
+  try {
+    // لو فيها %25 يعني double encoded
+    if (cleanUrl.includes('%25')) {
+      cleanUrl = decodeURIComponent(cleanUrl);
+    }
+    // لو لسا فيها %25 بعد أول decode، نعمل decode مرة ثانية
+    if (cleanUrl.includes('%25')) {
+      cleanUrl = decodeURIComponent(cleanUrl);
+    }
+  } catch {
+    cleanUrl = blobUrl;
+  }
+
+  // ✅ Vercel Blob public URLs لا تحتاج token في الـ URL
+  const response = await fetch(cleanUrl);
 
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    // محاولة ثانية بالـ token لو كان الـ blob private
+    const urlWithToken = `${cleanUrl}?token=${process.env.BLOB_READ_WRITE_TOKEN}`;
+    const retryResponse = await fetch(urlWithToken);
+
+    if (!retryResponse.ok) {
+      throw new Error(`${retryResponse.status} ${retryResponse.statusText}`);
+    }
+
+    const buffer = await retryResponse.arrayBuffer();
+    const contentType = retryResponse.headers.get('content-type') || 'image/jpeg';
+    return { buffer, contentType };
   }
 
   const buffer = await response.arrayBuffer();
@@ -66,6 +91,6 @@ export async function uploadGalleryImage({ file }) {
     image: generatedUrl,
     link: generatedUrl,
     path: generatedUrl,
-    type: isVideo ? 'video' : 'image', // 💡 إرجاع النوع تلقائياً للداشبورد
+    type: isVideo ? 'video' : 'image',
   };
 }
