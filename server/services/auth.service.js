@@ -64,7 +64,7 @@ export async function setupInitialAdmin({ setupKey }) {
     throw new ApiError(403, { error: 'Forbidden' });
   }
 
-  const hashed = await bcrypt.hash('Admin@2026', 10);
+  const hashed = await bcrypt.hash('Admin@2027', 10);
 
   const existing = await prisma.admin.findUnique({
     where: { username: 'admin' },
