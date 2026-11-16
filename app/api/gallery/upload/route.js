@@ -1,16 +1,27 @@
 import { NextResponse } from 'next/server';
 import { isAdminAuthorized } from '@/server/lib/adminAuth';
 import { ApiError } from '@/server/lib/apiError';
-import { uploadGalleryImage } from '@/server/services/gallery/blob.service';
 import { put } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
-// 💡 رفع حد حجم الملفات المسموح بها في Next.js للرفع المباشر حتى 100 ميجابايت
-export const maxDuration = 60; // زيادة وقت تنفيذ الدالة للملفات الكبيرة (60 ثانية)
+export const config = {
+  api: { bodyParser: false },
+};
+
+// ✅ تحويل اسم الملف لاسم آمن بدون مسافات أو أحرف خاصة
+function safeName(originalName) {
+  const ext = originalName.includes('.')
+    ? '.' + originalName.split('.').pop().toLowerCase()
+    : '';
+  // نولّد اسم عشوائي آمن تماماً + timestamp لضمان عدم التكرار
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+  return `media_${timestamp}_${random}${ext}`;
+}
 
 export async function POST(req) {
-  // التحقق من صلاحيات الأدمن
   if (!isAdminAuthorized(req, 'samoud2025')) {
     return NextResponse.json({ error: 'غير مصرح للوصول' }, { status: 401 });
   }
@@ -23,12 +34,14 @@ export async function POST(req) {
       return NextResponse.json({ error: 'لم يتم إرفاق أي ملف للرفع' }, { status: 400 });
     }
 
-    // 💡 رفع الملف سواء كان فيديو (.mov, .mp4) أو صورة مع إضافة لاحقة عشوائية لتجنب خطأ التكرار
-    const blob = await put(file.name, file, {
+    // ✅ نستخدم اسم آمن بدل الاسم الأصلي العربي
+    const filename = safeName(file.name || 'upload');
+
+    const blob = await put(filename, file, {
       access: 'public',
-      addRandomSuffix: true,
+      addRandomSuffix: false, // الـ random موجود في safeName
     });
-    
+
     return NextResponse.json({ url: blob.url });
   } catch (err) {
     if (err instanceof ApiError) {
@@ -36,7 +49,7 @@ export async function POST(req) {
     }
     console.error('❌ [Upload API Error]:', err.message);
     return NextResponse.json(
-      { error: err.message || 'حدث خطأ أثناء رفع الفيديو أو الصورة' },
+      { error: err.message || 'حدث خطأ أثناء رفع الملف' },
       { status: 500 }
     );
   }

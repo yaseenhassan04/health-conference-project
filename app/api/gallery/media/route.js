@@ -30,6 +30,7 @@ const fail = (err) =>
 const FIELDS = ['type', 'src', 'thumbnail', 'captionAr', 'captionEn', 'tag', 'tagEn', 'category', 'published', 'order'];
 const pick = (o) => Object.fromEntries(FIELDS.filter((k) => k in o).map((k) => [k, o[k]]));
 
+// ─── GET ───
 export async function GET(req) {
   try {
     const wantAll = new URL(req.url).searchParams.get('all') === '1' && isAdmin(req);
@@ -42,20 +43,17 @@ export async function GET(req) {
   }
 }
 
-/* ───── POST: إضافة (تم تعديلها لدعم رفع الملفات وتجنب خطأ التكرار) ───── */
+// ─── POST: إضافة عنصر جديد ───
 export async function POST(req) {
   if (!isAdmin(req)) return forbid();
   try {
     const contentType = req.headers.get('content-type') || '';
     let body = {};
 
-    // دعم استقبال FormData (في حال تم إرفاق ملف فعلي) أو JSON العادي
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
       const file = formData.get('file') || formData.get('src');
-
       if (file && typeof file === 'object') {
-        // 💡 رفع الملف إلى Vercel Blob مع إضافة رمز عشوائي لمنع خطأ التكرار نهائياً
         const blob = await put(file.name, file, {
           access: 'public',
           addRandomSuffix: true,
@@ -65,7 +63,6 @@ export async function POST(req) {
       } else if (typeof file === 'string') {
         body.src = file;
       }
-
       for (const key of FIELDS) {
         const val = formData.get(key);
         if (val !== null) body[key] = val;
@@ -85,12 +82,12 @@ export async function POST(req) {
   }
 }
 
+// ─── PATCH: تعديل عنصر ───
 export async function PATCH(req) {
   if (!isAdmin(req)) return forbid();
   try {
     const { id, ...rest } = await req.json();
     if (!id) return NextResponse.json({ error: 'id مطلوب' }, { status: 400 });
-
     const res = await updateGalleryMedia({ id, patch: pick(rest) });
     const item = res?.item ?? toList(res).find((i) => i.id === id);
     if (!item) return NextResponse.json({ error: 'العنصر غير موجود' }, { status: 404 });
@@ -100,6 +97,7 @@ export async function PATCH(req) {
   }
 }
 
+// ─── DELETE: حذف عنصر واحد ───
 export async function DELETE(req) {
   if (!isAdmin(req)) return forbid();
   try {
@@ -108,9 +106,31 @@ export async function DELETE(req) {
       try { id = (await req.json()).id; } catch {}
     }
     if (!id) return NextResponse.json({ error: 'id مطلوب' }, { status: 400 });
-
     const list = toList(await deleteGalleryMedia({ id }));
     return NextResponse.json({ ok: true, items: list });
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+// ─── PUT: حذف متعدد في request واحد ───
+export async function PUT(req) {
+  if (!isAdmin(req)) return forbid();
+  try {
+    const { ids } = await req.json();
+    if (!ids?.length) return NextResponse.json({ error: 'ids مطلوب' }, { status: 400 });
+
+    const { items } = await getGalleryMedia();
+    const updated = items.filter((item) => !ids.map(String).includes(String(item.id)));
+
+    await put('gallery/db.json', JSON.stringify({ items: updated }, null, 2), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+      allowOverwrite: true,
+    });
+
+    return NextResponse.json({ ok: true, items: updated });
   } catch (err) {
     return fail(err);
   }

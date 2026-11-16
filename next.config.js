@@ -11,6 +11,12 @@ const nextConfig = {
     minimumCacheTTL: 86400,
   },
   compress: true,
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
 };
 
 module.exports = nextConfig;
