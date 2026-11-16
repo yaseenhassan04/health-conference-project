@@ -228,16 +228,24 @@ export default function Home() {
         let needsSave = false;
         mediaItems.forEach((_, i) => {
           const k = String(i);
-          if (savedLikes[k] !== undefined) { initLikes[i] = savedLikes[k]; } else { initLikes[i] = Math.floor(Math.random() * 30) + 5; needsSave = true; }
-          if (savedViews[k] !== undefined) { initViews[i] = savedViews[k]; } else { initViews[i] = Math.floor(Math.random() * 200) + 50; needsSave = true; }
+          const isVid = mediaItems[i]?.type === "video";
+          if (savedLikes[k] !== undefined) { initLikes[i] = savedLikes[k]; } else { initLikes[i] = isVid ? Math.floor(Math.random() * 300) + 200 : Math.floor(Math.random() * 301) + 500; needsSave = true; }
+          if (savedViews[k] !== undefined) { initViews[i] = savedViews[k]; } else { initViews[i] = isVid ? Math.floor(Math.random() * 5000) + 5000 : Math.floor(Math.random() * 2501) + 2500; needsSave = true; }
         });
         setMediaLikes(initLikes);
         setMediaViews(initViews);
-        if (needsSave) saveStats(initLikes, initViews);
+        if (needsSave) {
+          // حفظ فوري بدون تأخير عشان الأرقام تثبت من أول مرة
+          fetch("/api/gallery/stats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ likes: initLikes, views: initViews }),
+          }).catch(() => {});
+        }
       })
       .catch(() => {
         const initLikes = {}, initViews = {};
-        mediaItems.forEach((_, i) => { initLikes[i] = Math.floor(Math.random() * 30) + 5; initViews[i] = Math.floor(Math.random() * 200) + 50; });
+        mediaItems.forEach((item, i) => { const isVid = item?.type === "video"; initLikes[i] = isVid ? Math.floor(Math.random() * 300) + 200 : Math.floor(Math.random() * 301) + 500; initViews[i] = isVid ? Math.floor(Math.random() * 5000) + 5000 : Math.floor(Math.random() * 2501) + 2500; });
         setMediaLikes(initLikes);
         setMediaViews(initViews);
       });
